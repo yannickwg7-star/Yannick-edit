@@ -1,0 +1,49 @@
+"""Cut, clean (erase burned-in captions) and upscale source clips from the reference
+screen recordings into per-segment frame folders + segments.json.
+
+usage: python3 build_clips.py <uploads_dir> <out_dir>
+"""
+import json, os, subprocess, sys
+
+UP, OUT = sys.argv[1], sys.argv[2]
+REF1 = [f for f in os.listdir(UP) if f.startswith('59466f82')][0]
+REF2 = [f for f in os.listdir(UP) if f.startswith('f99de216')][0]
+REF3 = [f for f in os.listdir(UP) if f.startswith('eaff6518')][0]
+FPS = 30
+SONG0 = 2.40          # where the song starts in reference 1's recording
+BEAT = 0.4167         # ~144 BPM
+
+# crop of the reel picture inside each iPad screen recording, + caption box to erase
+PIC = 'crop=690:624:615:318'
+TOP3, BOT3 = 'crop=690:492:615:176', 'crop=690:488:615:669'
+ERASE = {
+    'r1': 'delogo=x=96:y=286:w=500:h=56',
+    'gu': 'delogo=x=232:y=276:w=226:h=66',
+    'ng': 'delogo=x=182:y=284:w=328:h=56',
+    'r3': 'delogo=x=278:y=226:w=136:h=42',
+}
+b = lambda k: round(4.87 - (4 - k) * BEAT, 3)
+SEGS = [  # (start, end, source, rec_time, crop, erase, kind)
+    (b(0), b(1), REF2, 4.25, PIC, 'gu', 'flash'),     # Deku crying
+    (b(1), b(2), REF3, 3.95, TOP3, 'r3', 'flash'),    # Tanjiro carrying the log
+    (b(2), b(3), REF2, 1.75, PIC, 'gu', 'flash'),     # Gojo bleeding
+    (b(3), 4.87, REF2, 3.25, PIC, 'gu', 'flash'),     # crying, face streaked
+    (4.87, 9.60, REF1, 4.87 + SONG0, PIC, 'r1', 'story'),
+    (9.60, 9.60 + BEAT, REF2, 4.60, PIC, 'ng', 'power'),            # glowing aura eyes
+    (9.60 + BEAT, 9.60 + 2 * BEAT, REF3, 4.05, BOT3, 'r3', 'power'),  # Tanjiro smiling
+    (9.60 + 2 * BEAT, 10.80, REF2, 9.42, PIC, 'ng', 'power'),       # Goku Super Saiyan
+]
+os.makedirs(OUT, exist_ok=True)
+meta = []
+for i, (t0, t1, src, rec, crop, er, kind) in enumerate(SEGS):
+    d = os.path.join(OUT, f'seg{i}')
+    os.makedirs(d, exist_ok=True)
+    n = round((t1 - t0) * FPS) + 2
+    vf = f'{crop},{ERASE[er]},fps={FPS},scale=-2:1080:flags=lanczos,unsharp=5:5:0.6'
+    subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', f'{rec:.3f}', '-i', os.path.join(UP, src),
+                    '-frames:v', str(n), '-vf', vf, os.path.join(d, '%04d.jpg'), '-qscale:v', '2'], check=True)
+    meta.append({'t0': t0, 't1': t1, 'dir': f'seg{i}', 'kind': kind, 'n': len(os.listdir(d))})
+subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', str(SONG0), '-t', '10.8', '-i', os.path.join(UP, REF1),
+                '-vn', '-af', 'afade=t=out:st=10.5:d=0.3', '-ar', '44100', os.path.join(OUT, 'song.wav')], check=True)
+json.dump({'segments': meta, 'beat': BEAT}, open(os.path.join(OUT, 'segments.json'), 'w'), indent=1)
+print(json.dumps(meta))
