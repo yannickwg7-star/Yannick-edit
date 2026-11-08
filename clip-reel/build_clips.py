@@ -24,6 +24,7 @@ ERASE = {  # caption box (x, y, w, h) in the cropped picture
 }
 b = lambda k: round(4.87 - (4 - k) * BEAT, 3)
 SEGS = [  # (start, end, source, rec_time, crop, erase, kind)
+    (2.37, b(0), REF3, 5.80, BOT3, 'r3', 'grow'),     # Thorfinn at sunset, inside the word GROW
     (b(0), b(1), REF2, 4.25, PIC, 'gu', 'flash'),     # Deku crying
     (b(1), b(2), REF2, 3.25, PIC, 'gu', 'flash'),     # crying, face streaked
     (b(2), b(3), REF2, 1.75, PIC, 'gu', 'flash'),     # beaten down
@@ -33,10 +34,10 @@ SEGS = [  # (start, end, source, rec_time, crop, erase, kind)
     (6.50, 7.30, REF3, 3.85, TOP3, 'r3', 'story'),    # tired: Tanjiro carrying the log
     (7.30, 8.17, REF3, 7.55, TOP3, 'r3', 'story'),    # anxious: bloodied, shocked
     (8.17, 9.03, REF3, 5.80, TOP3, 'r3', 'story'),    # uncomfortable: Thorfinn in the fire
-    (9.03, 9.60, REF1, 11.43, PIC, 'r1', 'power'),    # Ippo raises the belt
-    (9.60, 9.60 + BEAT, REF2, 4.60, PIC, 'ng', 'power'),             # glowing aura eyes
-    (9.60 + BEAT, 9.60 + 2 * BEAT, REF3, 8.05, BOT3, 'r3', 'power'),  # Saitama
-    (9.60 + 2 * BEAT, 10.80, REF2, 9.42, PIC, 'ng', 'power'),        # Goku Super Saiyan
+    (9.03, 9.03 + BEAT, REF1, 11.43, PIC, 'r1', 'power'),              # Ippo raises the belt
+    (9.03 + BEAT, 9.03 + 2 * BEAT, REF2, 4.60, PIC, 'ng', 'power'),    # glowing aura eyes
+    (9.03 + 2 * BEAT, 9.03 + 3 * BEAT, REF3, 8.05, BOT3, 'r3', 'power'),  # Saitama
+    (9.03 + 3 * BEAT, 10.80, REF2, 9.42, PIC, 'ng', 'power'),          # Goku Super Saiyan
 ]
 os.makedirs(OUT, exist_ok=True)
 meta = []
