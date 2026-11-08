@@ -5,7 +5,7 @@ const fs = require('fs'), path = require('path');
 const clips = path.resolve(process.argv[2]), out = path.resolve(process.argv[3]);
 const only = process.argv[4] ? process.argv[4].split(',').map(Number) : null;
 const { segments } = JSON.parse(fs.readFileSync(path.join(clips, 'segments.json')));
-const FPS = 30, TOTAL = Math.round(10.8 * FPS);
+const FPS = 30, TOTAL = Math.round(10.5 * FPS);
 
 function source(f) {
   const t = f / FPS;

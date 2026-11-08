@@ -57,7 +57,10 @@ for i, (t0, t1, src, rec, crop, er, kind) in enumerate(SEGS):
     subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'clean_text.py'),
                     rawd, d, *map(str, ERASE[er]), *(['box'] if kind == 'flash' or i == len(SEGS) - 1 else [])], check=True)
     meta.append({'t0': t0, 't1': t1, 'dir': f'seg{i}', 'kind': kind, 'n': len(os.listdir(d))})
-subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', str(SONG0), '-t', '10.8', '-i', os.path.join(UP, REF1),
-                '-vn', '-af', 'afade=t=out:st=10.5:d=0.3', '-ar', '44100', os.path.join(OUT, 'song.wav')], check=True)
+# the song in the recording ends at 9.45s (then the original reel loops back to the start):
+# fade it out evenly (linear in dB, 0 to -40 dB from 7.6s to 9.45s), then keep silence to the end of the video
+subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', str(SONG0), '-t', '9.45', '-i', os.path.join(UP, REF1),
+                '-vn', '-af', "volume='if(lt(t,7.6),1,pow(10,-2*(t-7.6)/1.85))':eval=frame,apad=whole_dur=10.5", '-ar', '44100',
+                os.path.join(OUT, 'song.wav')], check=True)
 json.dump({'segments': meta, 'beat': BEAT}, open(os.path.join(OUT, 'segments.json'), 'w'), indent=1)
 print(json.dumps(meta))

@@ -1,7 +1,7 @@
 // "When God wants you to grow": designed motion edit.
 // Kinetic type, text-mask reveals, beat-synced designed transitions, HUD details.
 // Source frames are pushed in per output frame by compose.cjs. No blur effects.
-const W = 1080, H = 1920, FPS = 30, DUR = 10.8;
+const W = 1080, H = 1920, FPS = 30, DUR = 10.5;
 window.META = { W, H, FPS, DUR };
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -236,7 +236,7 @@ function renderScene(ctx, t, img, seg) {
     }
     hud(ctx, t);
   }
-  const f = P(t, DUR - 0.25, DUR);
+  const f = P(t, DUR - 0.35, DUR);
   if (f > 0) { ctx.fillStyle = `rgba(0,0,0,${f})`; ctx.fillRect(0, 0, W, H); }
 }
 
