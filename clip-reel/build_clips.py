@@ -1,4 +1,4 @@
-"""Cut, clean (erase burned-in captions) and upscale source clips from the reference
+"""Cut, clean (inpaint burned-in captions) and upscale source clips from the reference
 screen recordings into per-segment frame folders + segments.json.
 
 usage: python3 build_clips.py <uploads_dir> <out_dir>
@@ -16,11 +16,11 @@ BEAT = 0.4167         # ~144 BPM
 # crop of the reel picture inside each iPad screen recording, + caption box to erase
 PIC = 'crop=690:624:615:318'
 TOP3, BOT3 = 'crop=690:492:615:176', 'crop=690:488:615:669'
-ERASE = {
-    'r1': 'delogo=x=96:y=286:w=500:h=56',
-    'gu': 'delogo=x=232:y=276:w=226:h=66',
-    'ng': 'delogo=x=182:y=284:w=328:h=56',
-    'r3': 'delogo=x=278:y=226:w=136:h=42',
+ERASE = {  # caption box (x, y, w, h) in the cropped picture
+    'r1': (90, 280, 512, 70),
+    'gu': (190, 262, 310, 92),
+    'ng': (150, 270, 390, 84),
+    'r3': (262, 214, 168, 64),
 }
 b = lambda k: round(4.87 - (4 - k) * BEAT, 3)
 SEGS = [  # (start, end, source, rec_time, crop, erase, kind)
@@ -30,7 +30,7 @@ SEGS = [  # (start, end, source, rec_time, crop, erase, kind)
     (b(3), 4.87, REF2, 3.25, PIC, 'gu', 'flash'),     # crying, face streaked
     (4.87, 9.60, REF1, 4.87 + SONG0, PIC, 'r1', 'story'),
     (9.60, 9.60 + BEAT, REF2, 4.60, PIC, 'ng', 'power'),            # glowing aura eyes
-    (9.60 + BEAT, 9.60 + 2 * BEAT, REF3, 4.05, BOT3, 'r3', 'power'),  # Tanjiro smiling
+    (9.60 + BEAT, 9.60 + 2 * BEAT, REF3, 8.05, BOT3, 'r3', 'power'),  # Saitama
     (9.60 + 2 * BEAT, 10.80, REF2, 9.42, PIC, 'ng', 'power'),       # Goku Super Saiyan
 ]
 os.makedirs(OUT, exist_ok=True)
@@ -39,9 +39,12 @@ for i, (t0, t1, src, rec, crop, er, kind) in enumerate(SEGS):
     d = os.path.join(OUT, f'seg{i}')
     os.makedirs(d, exist_ok=True)
     n = round((t1 - t0) * FPS) + 2
-    vf = f'{crop},{ERASE[er]},fps={FPS},scale=-2:1080:flags=lanczos,unsharp=5:5:0.6'
+    rawd = d + '_raw'
+    os.makedirs(rawd, exist_ok=True)
     subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', f'{rec:.3f}', '-i', os.path.join(UP, src),
-                    '-frames:v', str(n), '-vf', vf, os.path.join(d, '%04d.jpg'), '-qscale:v', '2'], check=True)
+                    '-frames:v', str(n), '-vf', f'{crop},fps={FPS}', os.path.join(rawd, '%04d.png')], check=True)
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'clean_text.py'),
+                    rawd, d, *map(str, ERASE[er]), *(['box'] if kind == 'flash' or i == 7 else [])], check=True)
     meta.append({'t0': t0, 't1': t1, 'dir': f'seg{i}', 'kind': kind, 'n': len(os.listdir(d))})
 subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', str(SONG0), '-t', '10.8', '-i', os.path.join(UP, REF1),
                 '-vn', '-af', 'afade=t=out:st=10.5:d=0.3', '-ar', '44100', os.path.join(OUT, 'song.wav')], check=True)

@@ -1,4 +1,4 @@
-// Compositor for the clip edit: hook text, beat-synced punch-ins, blurred fill,
+// Compositor for the clip edit: hook text, beat-synced punch-ins, black bars,
 // caption band, flashes. Source frames are pushed in per output frame.
 const W = 1080, H = 1920, FPS = 30, DUR = 10.8;
 window.META = { W, H, FPS, DUR };
@@ -35,7 +35,7 @@ function wrap(ctx, words, maxW) {
 }
 function caption(ctx, text, t, t0, { size = 62, stagger = 0, accent = [], pop = false, y = BAND_Y } = {}) {
   ctx.save();
-  ctx.font = `600 ${size}px ${SANS}`; ctx.textBaseline = 'middle';
+  ctx.font = `700 ${size}px ${SANS}`; ctx.textBaseline = 'middle';
   const lines = text.split('|').flatMap(seg => wrap(ctx, seg.trim().split(' '), 940));
   const sp = ctx.measureText(' ').width, lh = size * 1.2;
   let wi = 0;
@@ -48,10 +48,10 @@ function caption(ctx, text, t, t0, { size = 62, stagger = 0, accent = [], pop = 
       if (p > 0) {
         ctx.save();
         ctx.globalAlpha = p;
-        if (p < 1) ctx.filter = `blur(${(1 - p) * 8}px)`;
         ctx.translate(x + ww / 2, ly + (1 - p) * 14);
         if (pop) { const s = lerp(1.35, 1, E.outBack(P(t, ws, ws + 0.25))); ctx.scale(s, s); }
-        ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 2;
+        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 2;
+        ctx.lineJoin = 'round'; ctx.lineWidth = 9; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(word, -ww / 2, 0); ctx.shadowBlur = 0;
         ctx.fillStyle = accent.includes(word) ? '#ffd27a' : '#fff';
         ctx.fillText(word, -ww / 2, 0);
         ctx.restore();
@@ -70,12 +70,6 @@ function drawPicture(ctx, img, t, seg) {
   const s = punch * drift * beat;
   let sx = 0, sy = 0;
   if (c > 0 && d < 0.3) { const k = Math.exp(-d * 16) * 14; sx = k * Math.sin(d * 95 + c * 9); sy = k * Math.cos(d * 81 + c * 5); }
-  // blurred fill for the bars
-  ctx.save();
-  ctx.filter = 'blur(38px) brightness(0.42) saturate(1.3)';
-  const fs = H / img.height * 1.1;
-  ctx.drawImage(img, W / 2 - img.width * fs / 2, H / 2 - img.height * fs / 2, img.width * fs, img.height * fs);
-  ctx.restore();
   // main picture (cover-cropped into a 1080x1080 window)
   ctx.save();
   ctx.beginPath(); ctx.rect(0, PIC_Y, W, PIC_H); ctx.clip();
@@ -84,23 +78,7 @@ function drawPicture(ctx, img, t, seg) {
   ctx.filter = seg.kind === 'flash' ? 'brightness(0.7) contrast(1.15) saturate(0.85)' : 'contrast(1.06) saturate(1.12)';
   ctx.drawImage(img, -img.width * k / 2, -img.height * k / 2, img.width * k, img.height * k);
   ctx.restore();
-  // soft caption band, hides the erased original captions (feathered via gradient mask)
-  bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-over'; bctx.clearRect(0, 0, W, BAND_H);
-  bctx.save();
-  bctx.filter = 'blur(22px) brightness(0.5)';
-  bctx.translate(W / 2 + sx, PIC_Y + PIC_H / 2 + sy - (BAND_Y - BAND_H / 2)); bctx.scale(s, s);
-  bctx.drawImage(img, -img.width * k / 2, -img.height * k / 2, img.width * k, img.height * k);
-  bctx.restore();
-  bctx.globalCompositeOperation = 'destination-in';
-  const g = bctx.createLinearGradient(0, 0, 0, BAND_H);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.28, 'rgba(0,0,0,1)'); g.addColorStop(0.72, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-  bctx.fillStyle = g; bctx.fillRect(0, 0, W, BAND_H);
-  ctx.drawImage(BAND, 0, BAND_Y - BAND_H / 2);
 }
-const BAND_H = 220;
-const BAND = document.createElement('canvas'); BAND.width = W; BAND.height = BAND_H;
-const bctx = BAND.getContext('2d');
-
 function renderScene(ctx, t, img, seg) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
@@ -118,9 +96,9 @@ function renderScene(ctx, t, img, seg) {
     ctx.restore();
   } else if (t < 9.03) {
     const c = CAPS.find(c => t >= c[0] && t < c[1]);
-    if (c) caption(ctx, c[2], t, c[0], { size: 64 });
+    if (c) caption(ctx, c[2], t, c[0], { size: 70 });
   } else {
-    caption(ctx, 'But they never | make you fail', t, 9.03, { size: 74, stagger: 0.1, accent: ['never'], pop: true });
+    caption(ctx, 'But they never | make you fail', t, 9.03, { size: 82, stagger: 0.1, accent: ['never'], pop: true });
   }
   // cut flashes
   const c = lastCut(t), d = t - c;
@@ -163,4 +141,4 @@ window.renderFrame = async function (frame, dataUrl, seg) {
   post(frame);
   return main.toDataURL('image/png');
 };
-window.ready = document.fonts.load(`600 64px ${SANS}`);
+window.ready = document.fonts.load(`700 64px ${SANS}`);
