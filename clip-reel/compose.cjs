@@ -16,7 +16,7 @@ function source(f) {
   const seg = segments[si];
   const idx = Math.min(seg.n, Math.floor((t - seg.t0) * FPS + 1e-6) + 1);
   // previous clip's last frame (for card hand-offs) and story thumbnails (for the finale)
-  const prev = si > 0 && t - seg.t0 < 0.4 ? jpg(segments[si - 1].dir, segments[si - 1].n) : null;
+  const prev = si > 0 && t - seg.t0 < 0.6 ? jpg(segments[si - 1].dir, segments[si - 1].n) : null;
   const thumbs = seg === segments[segments.length - 1] ?
     segments.filter(s => s.kind === 'story' || s.kind === 'flash').map(s => jpg(s.dir, Math.min(s.n, 10))) : null;
   return [jpg(seg.dir, idx), seg, prev, thumbs];
