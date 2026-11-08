@@ -16,16 +16,16 @@ const E = {
 const SANS = '"Inter"', DISP = '"Inter Display"', MONO = '"JetBrains Mono"';
 const GOLD = '#ffd27a';
 const PX = 0, PY = 420, PW = 1080, PH = 1080;     // picture window
-const BEAT = 0.4167;
+const BEAT = 0.414;
 
 // cut → designed transition
 const CUTS = [
-  [3.203, 'punch'], [3.62, 'slice'], [4.037, 'punch'], [4.453, 'slice'],
-  [4.87, 'aperture'], [5.70, 'slice'], [6.50, 'iris'], [7.30, 'punch'], [8.17, 'slice'],
-  [9.03, 'aperture'], [9.447, 'punch'], [9.863, 'slice'], [10.28, 'mask'],
+  [3.014, 'punch'], [3.428, 'slice'], [3.842, 'punch'], [4.256, 'slice'],
+  [4.670, 'aperture'], [5.498, 'slice'], [6.326, 'iris'], [7.154, 'punch'], [7.982, 'slice'],
+  [8.810, 'aperture'], [9.224, 'punch'], [9.638, 'slice'], [10.052, 'mask'],
 ];
 const STORY = [
-  [4.87, 'DEPRESSED'], [5.70, 'LONELY'], [6.50, 'TIRED'], [7.30, 'ANXIOUS'], [8.17, 'UNCOMFORTABLE'],
+  [4.670, 'DEPRESSED'], [5.498, 'LONELY'], [6.326, 'TIRED'], [7.154, 'ANXIOUS'], [7.982, 'UNCOMFORTABLE'],
 ];
 const lastCut = t => { let c = null; for (const k of CUTS) if (t >= k[0]) c = k; return c; };
 
@@ -98,21 +98,21 @@ function picture(ctx, img, t, seg) {
 
 // ───────── HUD: chapter index, beat ticks, progress, timecode ─────────
 function hud(ctx, t) {
-  const a = P(t, 3.2, 3.6) * (1 - P(t, 10.28, 10.5));
+  const a = P(t, 3.014, 3.414) * (1 - P(t, 10.052, 10.27));
   if (a <= 0) return;
   ctx.save(); ctx.globalAlpha = a;
   font(ctx, 500, 22, MONO); ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.textBaseline = 'alphabetic';
   let idx, label;
-  if (t < 4.87) { idx = '00'; label = 'PROLOGUE'; }
-  else if (t < 9.03) { idx = '0' + STORY.filter(s => t >= s[0]).length; label = 'CHAPTER'; }
+  if (t < 4.670) { idx = '00'; label = 'PROLOGUE'; }
+  else if (t < 8.810) { idx = '0' + STORY.filter(s => t >= s[0]).length; label = 'CHAPTER'; }
   else { idx = '06'; label = 'BREAKTHROUGH'; }
   ctx.textAlign = 'left'; ctx.fillText(`${idx} / 06`, 64, PY - 34);
   ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText(label, W - 64, PY - 34);
   const y = PY + PH + 46;
   ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(64, y, W - 128, 2);
   ctx.fillStyle = '#fff'; ctx.fillRect(64, y, (W - 128) * clamp(t / DUR), 2);
-  for (let k = 0; k * BEAT + 0.286 < DUR; k++) {
-    const bt = k * BEAT + 0.286, x = 64 + (W - 128) * bt / DUR, on = t >= bt;
+  for (let k = 0; k * BEAT + 0.116 < DUR; k++) {
+    const bt = k * BEAT + 0.116, x = 64 + (W - 128) * bt / DUR, on = t >= bt;
     const pulse = on ? Math.exp(-(t - bt) * 10) : 0;
     ctx.fillStyle = on ? `rgba(255,${Math.round(210 + 45 * (1 - pulse))},${Math.round(122 + 133 * (1 - pulse))},1)` : 'rgba(255,255,255,0.3)';
     ctx.fillRect(x - 1, y - 6 - pulse * 10, 2, 14 + pulse * 10);
@@ -140,17 +140,17 @@ function masked(ctx, drawImg, drawMask, alpha = 1) {
   ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(TM, 0, 0); ctx.restore();
 }
 function hook(ctx, t, img) {
-  const lp = E.outExpo(P(t, 0.0, 0.5)), fadeAll = 1 - P(t, 2.95, 3.1);
+  const lp = E.outExpo(P(t, 0.0, 0.5)), fadeAll = 1 - P(t, 2.77, 2.92);
   ctx.save(); ctx.globalAlpha = fadeAll;
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillRect(W / 2 - 300 * lp * (1 - P(t, 2.2, 2.4)), 905, 600 * lp * (1 - P(t, 2.2, 2.4)), 2);
-  const words = [['WHEN', 0.286], ['GOD', 0.703], ['WANTS', 1.12], ['YOU', 1.536], ['TO', 1.953]];
+  ctx.fillRect(W / 2 - 300 * lp * (1 - P(t, 2.016, 2.216)), 905, 600 * lp * (1 - P(t, 2.016, 2.216)), 2);
+  const words = [['WHEN', 0.116], ['GOD', 0.530], ['WANTS', 0.944], ['YOU', 1.358], ['TO', 1.772]];
   font(ctx, 700, 64, SANS); ctx.letterSpacing = '6px';
   const sp = 26, widths = words.map(([w]) => ctx.measureText(w).width);
   const line1 = widths.slice(0, 3).reduce((a, b) => a + b) + sp * 2, line2 = widths.slice(3).reduce((a, b) => a + b) + sp;
   ctx.letterSpacing = '0px';
   let x1 = W / 2 - line1 / 2, x2 = W / 2 - line2 / 2;
-  const lift = lerp(0, -300, E.inOutCubic(P(t, 2.2, 2.55)));   // the words make room for GROW
+  const lift = lerp(0, -300, E.inOutCubic(P(t, 2.016, 2.366)));   // the words make room for GROW
   words.forEach(([w, t0], i) => {
     const on2 = i >= 3, x = on2 ? x2 : x1, base = on2 ? 990 : 880;
     ctx.save(); ctx.translate(0, lift);
@@ -160,20 +160,20 @@ function hook(ctx, t, img) {
   });
   ctx.restore();
   // GROW: the clip plays inside the letters, then we zoom through the O
-  if (t >= 2.37 && img) {
-    const z = 1 + E.inExpo(P(t, 2.88, 3.203)) * 60;
+  if (t >= 2.186 && img) {
+    const z = 1 + E.inExpo(P(t, 2.70, 3.014)) * 60;
     font(tm, 900, 300, DISP);
     const gw = tm.measureText('GROW').width, gx = W / 2 - gw / 2, base = 1100;
     const oX = gx + tm.measureText('GR').width + tm.measureText('O').width * 0.1, oY = base - 110;
-    const rise = E.outExpo(P(t, 2.37, 2.75));
-    masked(ctx, c => cover(c, img, 0, 0, W, H, lerp(1.25, 1.0, rise) * (1 + 0.04 * P(t, 2.37, 3.2))), m => {
+    const rise = E.outExpo(P(t, 2.186, 2.566));
+    masked(ctx, c => cover(c, img, 0, 0, W, H, lerp(1.25, 1.0, rise) * (1 + 0.04 * P(t, 2.186, 3.014))), m => {
       m.translate(oX, oY); m.scale(z, z); m.translate(-oX, -oY);
       m.beginPath(); m.rect(gx - 20, base - 300 * 0.78, gw + 40, 300 * 0.82); m.clip();
       font(m, 900, 300, DISP); m.fillStyle = '#fff'; m.textBaseline = 'alphabetic'; m.fillText('GROW', gx, base + (1 - rise) * 260);
     });
     ctx.save(); ctx.translate(oX, oY); ctx.scale(z, z); ctx.translate(-oX, -oY);
     ctx.beginPath(); ctx.rect(gx - 20, base - 300 * 0.78, gw + 40, 300 * 0.82); ctx.clip();
-    font(ctx, 900, 300, DISP); ctx.lineWidth = 2 / z; ctx.strokeStyle = `rgba(255,210,122,${0.9 * (1 - P(t, 2.9, 3.05))})`;
+    font(ctx, 900, 300, DISP); ctx.lineWidth = 2 / z; ctx.strokeStyle = `rgba(255,210,122,${0.9 * (1 - P(t, 2.72, 2.87))})`;
     ctx.textBaseline = 'alphabetic'; ctx.strokeText('GROW', gx, base + (1 - rise) * 260);
     ctx.restore();
   }
@@ -192,26 +192,26 @@ function storyText(ctx, t) {
 
 // ───────── finale: BUT THEY / NEVER / MAKE YOU FAIL, then the last clip inside NEVER ─────────
 function finale(ctx, t, img) {
-  const m = P(t, 10.28, 10.42);
+  const m = P(t, 10.052, 10.19);
   font(ctx, 900, 270, DISP);
   const nw = ctx.measureText('NEVER').width, nx = W / 2 - nw / 2, nb = 1075;
   if (m > 0 && img) {
-    masked(ctx, c => cover(c, img, 0, 600, W, 700, lerp(1.0, 1.08, P(t, 10.28, 10.8))), mm => {
+    masked(ctx, c => cover(c, img, 0, 600, W, 700, lerp(1.0, 1.08, P(t, 10.052, 10.8))), mm => {
       font(mm, 900, 270, DISP); mm.fillStyle = '#fff'; mm.textBaseline = 'alphabetic'; mm.fillText('NEVER', nx, nb);
     }, m);
     font(ctx, 900, 270, DISP); ctx.lineWidth = 3; ctx.strokeStyle = GOLD; ctx.textBaseline = 'alphabetic';
     ctx.strokeText('NEVER', nx, nb);
   }
-  riseText(ctx, 'BUT THEY', W / 2, 800, 52, t, 9.05, { weight: 700, fam: SANS, stagger: 0.02, ls: 14, dur: 0.35 });
+  riseText(ctx, 'BUT THEY', W / 2, 800, 52, t, 8.83, { weight: 700, fam: SANS, stagger: 0.02, ls: 14, dur: 0.35 });
   if (m < 1) {
     ctx.save(); ctx.globalAlpha = 1 - m;
-    const pop = lerp(1.25, 1, E.outBack(P(t, 9.447, 9.75)));
+    const pop = lerp(1.25, 1, E.outBack(P(t, 9.224, 9.53)));
     ctx.translate(W / 2, nb - 100); ctx.scale(pop, pop); ctx.translate(-W / 2, -(nb - 100));
-    riseText(ctx, 'NEVER', W / 2, nb, 270, t, 9.447, { color: GOLD, stagger: 0.035, dur: 0.38 });
+    riseText(ctx, 'NEVER', W / 2, nb, 270, t, 9.224, { color: GOLD, stagger: 0.035, dur: 0.38 });
     ctx.restore();
   }
-  riseText(ctx, 'MAKE YOU FAIL.', W / 2, 1185, 52, t, 9.863, { weight: 700, fam: SANS, stagger: 0.018, ls: 14, dur: 0.35 });
-  const r = E.outExpo(P(t, 9.9, 10.4));
+  riseText(ctx, 'MAKE YOU FAIL.', W / 2, 1185, 52, t, 9.638, { weight: 700, fam: SANS, stagger: 0.018, ls: 14, dur: 0.35 });
+  const r = E.outExpo(P(t, 9.675, 10.18));
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.fillRect(64, 730, 220 * r, 2); ctx.fillRect(W - 64 - 220 * r, 730, 220 * r, 2);
   ctx.fillRect(64, 1230, 220 * r, 2); ctx.fillRect(W - 64 - 220 * r, 1230, 220 * r, 2);
@@ -221,16 +221,16 @@ function finale(ctx, t, img) {
 function renderScene(ctx, t, img, seg) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  if (t < 3.203) hook(ctx, t, seg && seg.kind === 'grow' ? img : null);
+  if (t < 3.014) hook(ctx, t, seg && seg.kind === 'grow' ? img : null);
   else {
-    const inMask = t >= 10.28;
+    const inMask = t >= 10.052;
     if (img && !inMask) picture(ctx, img, t, seg);
-    if (t < 4.87) {   // one word per flash
-      const fw = [[3.203, 'PAIN'], [3.62, 'LOSS'], [4.037, 'DOUBT'], [4.453, 'FEAR']].filter(f => t >= f[0]).pop();
+    if (t < 4.670) {   // one word per flash
+      const fw = [[3.014, 'PAIN'], [3.428, 'LOSS'], [3.842, 'DOUBT'], [4.256, 'FEAR']].filter(f => t >= f[0]).pop();
       if (fw) riseText(ctx, fw[1], W / 2, 1035, 190, t, fw[0], { stagger: 0.025, dur: 0.3 });
     }
-    if (t >= 4.87 && t < 9.03) storyText(ctx, t);
-    if (t >= 9.03) {
+    if (t >= 4.670 && t < 8.810) storyText(ctx, t);
+    if (t >= 8.810) {
       if (!inMask) { ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fillRect(PX, PY, PW, PH); }
       finale(ctx, t, img);
     }
