@@ -25,13 +25,18 @@ ERASE = {  # caption box (x, y, w, h) in the cropped picture
 b = lambda k: round(4.87 - (4 - k) * BEAT, 3)
 SEGS = [  # (start, end, source, rec_time, crop, erase, kind)
     (b(0), b(1), REF2, 4.25, PIC, 'gu', 'flash'),     # Deku crying
-    (b(1), b(2), REF3, 3.95, TOP3, 'r3', 'flash'),    # Tanjiro carrying the log
-    (b(2), b(3), REF2, 1.75, PIC, 'gu', 'flash'),     # Gojo bleeding
-    (b(3), 4.87, REF2, 3.25, PIC, 'gu', 'flash'),     # crying, face streaked
-    (4.87, 9.60, REF1, 4.87 + SONG0, PIC, 'r1', 'story'),
-    (9.60, 9.60 + BEAT, REF2, 4.60, PIC, 'ng', 'power'),            # glowing aura eyes
+    (b(1), b(2), REF2, 3.25, PIC, 'gu', 'flash'),     # crying, face streaked
+    (b(2), b(3), REF2, 1.75, PIC, 'gu', 'flash'),     # beaten down
+    (b(3), 4.87, REF2, 2.50, PIC, 'gu', 'flash'),     # Hinata, scared
+    (4.87, 5.70, REF1, 7.27, PIC, 'r1', 'story'),     # depressed: Ippo in the alley
+    (5.70, 6.50, REF3, 9.55, TOP3, 'r3', 'story'),    # lonely: timid boy in the hoodie
+    (6.50, 7.30, REF3, 3.85, TOP3, 'r3', 'story'),    # tired: Tanjiro carrying the log
+    (7.30, 8.17, REF3, 7.55, TOP3, 'r3', 'story'),    # anxious: bloodied, shocked
+    (8.17, 9.03, REF3, 5.80, TOP3, 'r3', 'story'),    # uncomfortable: Thorfinn in the fire
+    (9.03, 9.60, REF1, 11.43, PIC, 'r1', 'power'),    # Ippo raises the belt
+    (9.60, 9.60 + BEAT, REF2, 4.60, PIC, 'ng', 'power'),             # glowing aura eyes
     (9.60 + BEAT, 9.60 + 2 * BEAT, REF3, 8.05, BOT3, 'r3', 'power'),  # Saitama
-    (9.60 + 2 * BEAT, 10.80, REF2, 9.42, PIC, 'ng', 'power'),       # Goku Super Saiyan
+    (9.60 + 2 * BEAT, 10.80, REF2, 9.42, PIC, 'ng', 'power'),        # Goku Super Saiyan
 ]
 os.makedirs(OUT, exist_ok=True)
 meta = []
@@ -44,7 +49,7 @@ for i, (t0, t1, src, rec, crop, er, kind) in enumerate(SEGS):
     subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', f'{rec:.3f}', '-i', os.path.join(UP, src),
                     '-frames:v', str(n), '-vf', f'{crop},fps={FPS}', os.path.join(rawd, '%04d.png')], check=True)
     subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'clean_text.py'),
-                    rawd, d, *map(str, ERASE[er]), *(['box'] if kind == 'flash' or i == 7 else [])], check=True)
+                    rawd, d, *map(str, ERASE[er]), *(['box'] if kind == 'flash' or i == len(SEGS) - 1 else [])], check=True)
     meta.append({'t0': t0, 't1': t1, 'dir': f'seg{i}', 'kind': kind, 'n': len(os.listdir(d))})
 subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', str(SONG0), '-t', '10.8', '-i', os.path.join(UP, REF1),
                 '-vn', '-af', 'afade=t=out:st=10.5:d=0.3', '-ar', '44100', os.path.join(OUT, 'song.wav')], check=True)
