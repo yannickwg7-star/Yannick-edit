@@ -225,6 +225,10 @@ function renderScene(ctx, t, img, seg) {
   else {
     const inMask = t >= 10.28;
     if (img && !inMask) picture(ctx, img, t, seg);
+    if (t < 4.87) {   // one word per flash
+      const fw = [[3.203, 'PAIN'], [3.62, 'LOSS'], [4.037, 'DOUBT'], [4.453, 'FEAR']].filter(f => t >= f[0]).pop();
+      if (fw) riseText(ctx, fw[1], W / 2, 1035, 190, t, fw[0], { stagger: 0.025, dur: 0.3 });
+    }
     if (t >= 4.87 && t < 9.03) storyText(ctx, t);
     if (t >= 9.03) {
       if (!inMask) { ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fillRect(PX, PY, PW, PH); }
