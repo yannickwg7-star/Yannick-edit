@@ -1,7 +1,7 @@
 // "When God wants you to grow": designed motion edit.
 // Kinetic type, text-mask reveals, beat-synced designed transitions, HUD details.
 // Source frames are pushed in per output frame by compose.cjs. No blur effects.
-const W = 1080, H = 1920, FPS = 30, DUR = 10.5;
+const W = 1080, H = 1920, FPS = 30, DUR = 9.5;
 window.META = { W, H, FPS, DUR };
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -20,12 +20,12 @@ const BEAT = 0.414;
 
 // cut → designed transition
 const CUTS = [
-  [3.014, 'punch'], [3.428, 'slice'], [3.842, 'punch'], [4.256, 'slice'],
-  [4.670, 'aperture'], [5.498, 'slice'], [6.326, 'iris'], [7.154, 'punch'], [7.982, 'slice'],
-  [8.810, 'aperture'], [9.224, 'punch'], [9.638, 'slice'], [10.052, 'mask'],
+  [3.014, 'punch'], [3.428, 'slice'],
+  [3.842, 'aperture'], [4.670, 'slice'], [5.498, 'iris'], [6.326, 'punch'], [7.154, 'slice'],
+  [7.982, 'aperture'], [8.396, 'punch'], [8.810, 'mask'],
 ];
 const STORY = [
-  [4.670, 'DEPRESSED'], [5.498, 'LONELY'], [6.326, 'TIRED'], [7.154, 'ANXIOUS'], [7.982, 'UNCOMFORTABLE'],
+  [3.842, 'DEPRESSED'], [4.670, 'LONELY'], [5.498, 'TIRED'], [6.326, 'ANXIOUS'], [7.154, 'UNCOMFORTABLE'],
 ];
 const lastCut = t => { let c = null; for (const k of CUTS) if (t >= k[0]) c = k; return c; };
 
@@ -98,13 +98,13 @@ function picture(ctx, img, t, seg) {
 
 // ───────── HUD: chapter index, beat ticks, progress, timecode ─────────
 function hud(ctx, t) {
-  const a = P(t, 3.014, 3.414) * (1 - P(t, 10.052, 10.27));
+  const a = P(t, 3.014, 3.414) * (1 - P(t, 8.810, 9.03));
   if (a <= 0) return;
   ctx.save(); ctx.globalAlpha = a;
   font(ctx, 500, 22, MONO); ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.textBaseline = 'alphabetic';
   let idx, label;
-  if (t < 4.670) { idx = '00'; label = 'PROLOGUE'; }
-  else if (t < 8.810) { idx = '0' + STORY.filter(s => t >= s[0]).length; label = 'CHAPTER'; }
+  if (t < 3.842) { idx = '00'; label = 'PROLOGUE'; }
+  else if (t < 7.982) { idx = '0' + STORY.filter(s => t >= s[0]).length; label = 'CHAPTER'; }
   else { idx = '06'; label = 'BREAKTHROUGH'; }
   ctx.textAlign = 'left'; ctx.fillText(`${idx} / 06`, 64, PY - 34);
   ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText(label, W - 64, PY - 34);
@@ -192,26 +192,26 @@ function storyText(ctx, t) {
 
 // ───────── finale: BUT THEY / NEVER / MAKE YOU FAIL, then the last clip inside NEVER ─────────
 function finale(ctx, t, img) {
-  const m = P(t, 10.052, 10.19);
+  const m = P(t, 8.810, 8.95);
   font(ctx, 900, 270, DISP);
   const nw = ctx.measureText('NEVER').width, nx = W / 2 - nw / 2, nb = 1075;
   if (m > 0 && img) {
-    masked(ctx, c => cover(c, img, 0, 600, W, 700, lerp(1.0, 1.08, P(t, 10.052, 10.8))), mm => {
+    masked(ctx, c => cover(c, img, 0, 600, W, 700, lerp(1.0, 1.08, P(t, 8.810, 9.5))), mm => {
       font(mm, 900, 270, DISP); mm.fillStyle = '#fff'; mm.textBaseline = 'alphabetic'; mm.fillText('NEVER', nx, nb);
     }, m);
     font(ctx, 900, 270, DISP); ctx.lineWidth = 3; ctx.strokeStyle = GOLD; ctx.textBaseline = 'alphabetic';
     ctx.strokeText('NEVER', nx, nb);
   }
-  riseText(ctx, 'BUT THEY', W / 2, 800, 52, t, 8.83, { weight: 700, fam: SANS, stagger: 0.02, ls: 14, dur: 0.35 });
+  riseText(ctx, 'BUT THEY', W / 2, 800, 52, t, 8.0, { weight: 700, fam: SANS, stagger: 0.02, ls: 14, dur: 0.35 });
   if (m < 1) {
     ctx.save(); ctx.globalAlpha = 1 - m;
-    const pop = lerp(1.25, 1, E.outBack(P(t, 9.224, 9.53)));
+    const pop = lerp(1.25, 1, E.outBack(P(t, 8.396, 8.70)));
     ctx.translate(W / 2, nb - 100); ctx.scale(pop, pop); ctx.translate(-W / 2, -(nb - 100));
-    riseText(ctx, 'NEVER', W / 2, nb, 270, t, 9.224, { color: GOLD, stagger: 0.035, dur: 0.38 });
+    riseText(ctx, 'NEVER', W / 2, nb, 270, t, 8.396, { color: GOLD, stagger: 0.035, dur: 0.38 });
     ctx.restore();
   }
-  riseText(ctx, 'MAKE YOU FAIL.', W / 2, 1185, 52, t, 9.638, { weight: 700, fam: SANS, stagger: 0.018, ls: 14, dur: 0.35 });
-  const r = E.outExpo(P(t, 9.675, 10.18));
+  riseText(ctx, 'MAKE YOU FAIL.', W / 2, 1185, 52, t, 8.810, { weight: 700, fam: SANS, stagger: 0.018, ls: 14, dur: 0.35 });
+  const r = E.outExpo(P(t, 8.85, 9.35));
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.fillRect(64, 730, 220 * r, 2); ctx.fillRect(W - 64 - 220 * r, 730, 220 * r, 2);
   ctx.fillRect(64, 1230, 220 * r, 2); ctx.fillRect(W - 64 - 220 * r, 1230, 220 * r, 2);
@@ -223,21 +223,19 @@ function renderScene(ctx, t, img, seg) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   if (t < 3.014) hook(ctx, t, seg && seg.kind === 'grow' ? img : null);
   else {
-    const inMask = t >= 10.052;
+    const inMask = t >= 8.810;
     if (img && !inMask) picture(ctx, img, t, seg);
-    if (t < 4.670) {   // one word per flash
-      const fw = [[3.014, 'PAIN'], [3.428, 'LOSS'], [3.842, 'DOUBT'], [4.256, 'FEAR']].filter(f => t >= f[0]).pop();
+    if (t < 3.842) {   // one word per flash
+      const fw = [[3.014, 'PAIN'], [3.428, 'FEAR']].filter(f => t >= f[0]).pop();
       if (fw) riseText(ctx, fw[1], W / 2, 1035, 190, t, fw[0], { stagger: 0.025, dur: 0.3 });
     }
-    if (t >= 4.670 && t < 8.810) storyText(ctx, t);
-    if (t >= 8.810) {
+    if (t >= 3.842 && t < 7.982) storyText(ctx, t);
+    if (t >= 7.982) {
       if (!inMask) { ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fillRect(PX, PY, PW, PH); }
       finale(ctx, t, img);
     }
     hud(ctx, t);
   }
-  const f = P(t, DUR - 0.35, DUR);
-  if (f > 0) { ctx.fillStyle = `rgba(0,0,0,${f})`; ctx.fillRect(0, 0, W, H); }
 }
 
 const main = document.getElementById('c'); main.width = W; main.height = H;
