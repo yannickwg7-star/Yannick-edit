@@ -1,8 +1,8 @@
-// "YOU'RE NOT LAZY, YOU'RE SCARED" (v2, all out): explainer motion piece, 1080x1920, 18s.
+// "YOU'RE NOT LAZY, YOU'RE SCARED" (motivational cut): 1080x1920, 23.5s.
 // Lamp-lit room with cast shadows, a word that becomes an object, a crowd of opinions,
 // a dive inside the brain (neural network, fear centre flooding red), an iris back to the
 // desk where the figure's own shadow becomes the fear, and words that act out their meaning.
-const W = 1080, H = 1920, FPS = 30, DUR = 18;
+const W = 1080, H = 1920, FPS = 30, DUR = 23.5;
 window.META = { W, H, FPS, DUR };
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -34,43 +34,66 @@ const DISP = '"Inter Display"', MONO = '"JetBrains Mono"';
 // ───────── timeline (matches the voiceover script) ─────────
 const T = { lazyQ: 1.6, fly: 2.8, toScale: 2.95, crowd: 3.3, lean: 3.55, but: 6.45, brainDrop: 6.55, dust: 7.0,
   toBrain: 7.85, inside: 8.35, timeHi: 9.7, crack: 10.6, emo: 11.25, outBrain: 12.35, desk: 12.8, monster: 13.4,
-  fear: 14.62, start: 15.35, end: 18.0 };
-const WORDS = [   // timed to the AI voiceover (words.json)
-  [0.508, 'YOU'],
-  [0.681, 'THINK'],
-  [0.854, "YOU'RE"],
-  [1.200, 'LAZY.', 'red'],
-  [3.000, 'MOST'],
-  [3.195, 'PEOPLE'],
-  [3.584, 'BELIEVE'],
-  [4.168, 'PROCRASTINATION', 'stretch'],
-  [5.141, 'MEANS'],
-  [5.336, 'NO'],
-  [5.531, 'DISCIPLINE.', 'red'],
-  [6.450, 'BUT', 'cyan'],
-  [6.610, 'RESEARCH'],
-  [6.929, 'SAYS'],
-  [7.089, 'THE'],
-  [7.249, 'OPPOSITE.', 'flip'],
-  [9.727, "IT'S"],
-  [9.918, 'NOT'],
-  [10.109, 'A'],
-  [10.300, 'TIME', 'crack'],
-  [10.682, 'PROBLEM.'],
-  [11.275, "IT'S"],
-  [11.462, 'AN'],
-  [11.650, 'EMOTION', 'cyan'],
-  [12.213, 'PROBLEM.'],
-  [12.780, 'YOU'],
-  [12.963, 'AVOID'],
-  [13.330, 'THE'],
-  [13.513, 'TASK'],
-  [13.869, 'TO'],
-  [14.057, 'AVOID'],
-  [14.432, 'THE'],
-  [14.620, 'FEAR.', 'fear'],
-  [15.550, 'START', 'gold'],
-  [15.894, 'SMALL.', 'small'],
+  fear: 14.62, start: 15.35, stairs: 16.7, climb: 17.6, sun: 18.6, top: 21.0, final: 22.2, end: 23.5 };
+const WORDS = [   // timed to the AI narration (words_motivation.json)
+  [0.350, "YOU"],
+  [0.513, "DON'T"],
+  [0.675, "HAVE"],
+  [1.000, "A"],
+  [1.163, "DISCIPLINE", 'red'],
+  [1.814, "PROBLEM."],
+  [3.250, "EVERYONE"],
+  [3.872, "TOLD"],
+  [4.028, "YOU"],
+  [4.183, "YOU'RE"],
+  [4.494, "LAZY", 'red'],
+  [4.950, "AND"],
+  [5.102, "YOU"],
+  [5.255, "STARTED"],
+  [5.560, "TO"],
+  [5.712, "BELIEVE"],
+  [6.169, "IT."],
+  [6.450, "BUT"],
+  [6.656, "THEY'RE"],
+  [7.069, "WRONG.", 'cyanBig'],
+  [8.150, "YOUR"],
+  [8.427, "BRAIN"],
+  [8.703, "ISN'T"],
+  [8.980, "BROKEN.", 'red'],
+  [9.850, "TIME", 'crack'],
+  [10.249, "WAS"],
+  [10.448, "NEVER"],
+  [10.847, "THE"],
+  [11.047, "PROBLEM."],
+  [11.700, "FEAR"],
+  [11.991, "WAS."],
+  [13.060, "AND"],
+  [13.222, "EVERY"],
+  [13.710, "DAY"],
+  [13.872, "YOU"],
+  [14.035, "WAIT"],
+  [14.295, "IT"],
+  [14.457, "GETS"],
+  [14.620, "BIGGER.", 'fear'],
+  [15.450, "SO"],
+  [15.764, "START", 'gold'],
+  [16.079, "SMALL.", 'small'],
+  [16.750, "ONE", 'gold'],
+  [17.153, "PAGE.", 'gold'],
+  [17.750, "ONE", 'gold'],
+  [18.213, "STEP.", 'gold'],
+  [18.750, "EVERY"],
+  [19.318, "SINGLE"],
+  [19.697, "DAY.", 'gold'],
+  [20.120, "UNTIL"],
+  [20.520, "THE"],
+  [20.720, "FEAR"],
+  [20.920, "IS"],
+  [21.120, "SMALLER", 'small'],
+  [21.520, "THAN"],
+  [21.720, "YOU.", 'goldBig'],
+  [22.200, "START", 'gold'],
+  [22.479, "TODAY.", 'goldBig'],
 ];
 
 // ───────── world layout ─────────
@@ -234,6 +257,18 @@ function brain(ctx, t, x, y, s, fear = 0, emotion = 0) {
 }
 // the scanner: a caliper that slides over the brain + readout panel
 
+// ───────── the staircase of pages and the climb ─────────
+const STEPS = Array.from({ length: 10 }, (_, i) => [-140 + i * 62, 320 - i * 72]);
+function climbPos(t) {
+  const c = 10 * P(t, T.climb, T.top);
+  if (c <= 0) return [-230, 380];
+  const i = Math.min(9, Math.floor(c)), f = c >= 10 ? 1 : c - i;
+  const A = i === 0 ? [-230, 380] : STEPS[i - 1], B = STEPS[i];
+  const k = E.inOutCubic(f);
+  return [lerp(A[0], B[0], k), lerp(A[1], B[1], k) - Math.sin(Math.PI * f) * 34];
+}
+function sunrise(t) { return E.inOutCubic(P(t, T.sun, T.sun + 2.4)); }
+
 // ───────── camera (world scenes) ─────────
 function camera(t) {
   const desk = { x: -95, y: -70, z: 1.1 }, scale = { x: SX - 20, y: 0, z: 0.98 };
@@ -243,6 +278,13 @@ function camera(t) {
   const seg = [[0, desk, 'c'], [T.toScale, desk, 'x'], [T.toScale + 0.42, scale, 'c'], [T.toBrain, scale, 'i'], [T.inside, dive, 'c'],
     [T.desk, deskBack, 'c'], [T.monster, deskBack, 'c'], [T.fear, { x: -180, y: -220, z: 0.92 }, 'c'], [T.start, { x: -180, y: -220, z: 0.92 }, 'c'],
     [T.start + 0.9, hands, 'c'], [T.end, { ...hands, z: 1.38 }, 'c']];
+  if (t >= T.climb) {
+    const [fx, fy] = climbPos(t), follow = { x: fx - 40, y: fy - 140, z: 1.12 };
+    const k = E.inOutCubic(P(t, T.climb, T.climb + 0.7)), fin = E.inOutCubic(P(t, T.top + 0.3, T.top + 1.4));
+    const fc = { x: 140, y: -330, z: lerp(0.95, 1.0, P(t, T.top + 1.4, T.end)) };
+    const fl = { x: lerp(hands.x, follow.x, k), y: lerp(hands.y, follow.y, k), z: lerp(hands.z, follow.z, k) };
+    return { x: lerp(fl.x, fc.x, fin), y: lerp(fl.y, fc.y, fin), z: lerp(fl.z, fc.z, fin), roll: 0 };
+  }
   for (let i = 0; i < seg.length - 1; i++) {
     const [t0, a, ease] = seg[i], [t1, b] = seg[i + 1];
     if (t >= t0 && t <= t1) {
@@ -267,24 +309,27 @@ function lampPower(t) {
   if (t >= T.start) p = lerp(0.8, 1.25, E.inOutCubic(P(t, T.start, T.start + 0.8)));
   return p;
 }
-function warmth(t) { return t >= T.start ? E.inOutCubic(P(t, T.start, T.start + 0.8)) : 0; }
+function warmth(t) { return t >= T.start ? Math.max(E.inOutCubic(P(t, T.start, T.start + 0.8)), 1.4 * sunrise(t)) : 0; }
 
 // ───────── the room ─────────
 const BOOKS = (() => { const r = rng(12); const b = []; let x = -690; while (x < -430) { const w = 16 + r() * 22; b.push([x, w, 70 + r() * 60, r()]); x += w + 3; } return b; })();
 function room(ctx, t) {
   // wall + floor
-  ctx.fillStyle = C.wall; ctx.fillRect(-1000, -1000, 1640, 1380);
-  ctx.fillStyle = '#14061B'; ctx.fillRect(-1000, 380, 1640, 700);
+  ctx.fillStyle = C.wall; ctx.fillRect(-1000, -1400, 1880, 1780);
+  ctx.fillStyle = '#14061B'; ctx.fillRect(-1000, 380, 1880, 700);
   // window with blinds (moonlight)
+  const su = sunrise(t);
   ctx.fillStyle = '#0B1630'; ctx.fillRect(380, -720, 230, 360);
-  for (let i = 0; i < 9; i++) { ctx.fillStyle = 'rgba(140,180,255,0.30)'; ctx.fillRect(380, -720 + i * 40, 230, 18); }
+  if (su > 0) { ctx.globalAlpha = su; ctx.fillStyle = shade(ctx, 0, -720, 0, -360, '#FFE7A8', '#FF7A3D'); ctx.fillRect(380, -720, 230, 360); ctx.globalAlpha = 1; }
+  for (let i = 0; i < 9; i++) { ctx.fillStyle = `rgba(${Math.round(lerp(140, 255, su))},${Math.round(lerp(180, 214, su))},${Math.round(lerp(255, 140, su))},0.30)`; ctx.fillRect(380, -720 + i * 40, 230, 18); }
   ctx.strokeStyle = '#4A2557'; ctx.lineWidth = 14; ctx.strokeRect(380, -720, 230, 360);
   // moonlight stripes on the wall
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   for (let i = 0; i < 6; i++) {
-    ctx.fillStyle = 'rgba(110,150,255,0.05)';
+    ctx.fillStyle = su > 0 ? `rgba(255,190,110,${0.05 + 0.1 * su})` : 'rgba(110,150,255,0.05)';
     ctx.beginPath(); ctx.moveTo(380, -700 + i * 40); ctx.lineTo(610, -700 + i * 40); ctx.lineTo(380 - 300, -150 + i * 64); ctx.lineTo(380 - 520, -150 + i * 64); ctx.fill();
   }
+  if (su > 0) { const g = ctx.createRadialGradient(495, -540, 0, 495, -540, 1100); g.addColorStop(0, `rgba(255,190,110,${0.5 * su})`); g.addColorStop(1, 'rgba(255,190,110,0)'); ctx.fillStyle = g; ctx.fillRect(-1000, -1400, 2000, 1800); }
   ctx.restore();
   // shelf with books
   ctx.fillStyle = '#4B2A5E'; ctx.fillRect(-720, -520, 320, 16);
@@ -292,21 +337,19 @@ function room(ctx, t) {
 }
 // the figure's shadow cast on the wall by the lamp, and the fear it turns into
 function castShadow(ctx, t, fig) {
-  const m = E.inOutCubic(P(t, T.monster, T.fear));                         // shadow → monster
-  const shrink = E.inOutCubic(P(t, T.start + 0.4, T.start + 1.8));          // monster → shadow again
-  const morph = m * (1 - shrink);
-  const p = lampPower(t);
-  const ax = fig.x - 190, ay = 380;
-  ctx.save();
-  ctx.globalAlpha = 0.55 * (1 - morph) * clamp(p);
-  ctx.translate(ax, ay); ctx.scale(1.55, 1.55); ctx.translate(-fig.x, -ay);
-  figureSilhouette(ctx, fig, 'rgba(8,0,14,1)', t);
-  ctx.restore();
-  if (morph > 0.01) {
-    const roar = t > T.fear ? 1 + 0.07 * wob(t - T.fear, 5, 30) : 1;
-    ctx.save(); ctx.translate(ax + 40, ay); ctx.scale(lerp(0.7, 1.15, morph) * roar, lerp(0.7, 1.15, morph) * roar);
-    ctx.globalAlpha = morph; monsterShape(ctx, t, morph);
-    ctx.restore();
+  const m = E.inOutCubic(P(t, T.monster, T.fear));                          // shadow → monster
+  const shrink = E.inOutCubic(P(t, T.start + 0.4, T.top)) * 0.95;           // the fear shrinks as he climbs
+  const p = lampPower(t), mv = E.inOutCubic(P(t, T.climb + 1.2, T.top));
+  const ax = lerp(-420, STEPS[1][0] - 60, mv), ay = lerp(380, STEPS[1][1], mv);   // ends up on a step below him
+  if (m < 1) {
+    ctx.save(); ctx.globalAlpha = 0.55 * (1 - m) * clamp(p);
+    ctx.translate(-420, 380); ctx.scale(1.55, 1.55); ctx.translate(-fig.x, -380);
+    figureSilhouette(ctx, fig, 'rgba(8,0,14,1)', t); ctx.restore();
+  }
+  const a = m * (1 - P(t, T.final, T.final + 0.25));   // the tiny fear vanishes on START TODAY
+  if (a > 0.01) {
+    const roar = t > T.fear ? 1 + 0.07 * wob(t - T.fear, 5, 30) : 1, sc = lerp(0.7, 1.15, m) * lerp(1, 0.24, shrink) * roar;
+    ctx.save(); ctx.translate(ax + 40, ay); ctx.scale(sc, sc); ctx.globalAlpha = a; monsterShape(ctx, t, a); ctx.restore();
   }
 }
 function figureSilhouette(ctx, fig, col, t) {
@@ -362,8 +405,10 @@ function deskScene(ctx, t) {
   room(ctx, t);
   const slump = E.inOutCubic(P(t, 0.9, 1.6)) * (1 - E.inOutCubic(P(t, T.start, T.start + 0.5)));
   const facing = t > T.desk && t < T.start + 0.15 ? -1 : 1;
-  const reach = E.inOutCubic(P(t, T.start + 0.4, T.start + 1.1));
-  const fig = { x: -230, y: 380, s: 1.0, facing, slump, reach };
+  let reach = E.inOutCubic(P(t, T.start + 0.4, T.start + 1.1)) * (1 - E.inOutCubic(P(t, T.climb - 0.3, T.climb)));
+  reach += 2 * E.outBack(P(t, T.final - 0.25, T.final + 0.25));            // arm up at the top
+  const [fx, fy] = climbPos(t);
+  const fig = { x: fx, y: fy, s: 1.0, facing, slump, reach };
   castShadow(ctx, t, fig);
   lampObj(ctx, t);
   ctx.fillStyle = shade(ctx, -40, 150, 520, 150, '#7A4A8C', '#4B2A5E'); ctx.fillRect(-40, 150, 520, 26);
@@ -374,14 +419,26 @@ function deskScene(ctx, t) {
   // rim light on the figure from the lamp
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 * lampPower(t);
   figureSilhouette(ctx, { ...fig, x: fig.x + 4 }, 'rgba(255,190,110,0.5)', t); ctx.restore();
-  if (reach > 0) {
+  // pages fly out of the stack and become a staircase
+  for (let i = 0; i < STEPS.length; i++) {
+    const k = E.outBack(P(t, T.stairs + i * 0.08, T.stairs + i * 0.08 + 0.45));
+    if (k <= 0) continue;
+    const from = i === 0 ? [-120, -195] : [285, -40 - i * 18];
+    const [sx, sy] = STEPS[i], bob = Math.sin(t * 2 + i) * 3 * clamp(k);
+    const x = lerp(from[0], sx + 30, k), y = lerp(from[1], sy + 6, k) + bob;
+    const lit = t >= T.climb + i * 0.34 ? 1 : 0.4;
+    ctx.save(); ctx.translate(x, y); ctx.rotate((1 - clamp(k)) * 0.8);
+    ctx.shadowColor = C.goldL; ctx.shadowBlur = 24 * lit; ctx.fillStyle = lit > 0.5 ? '#FFF6E0' : '#E9E6F2'; ctx.fillRect(-62, -8, 124, 16);
+    ctx.restore();
+  }
+  if (reach > 0 && t < T.stairs) {
     const k = E.inOutCubic(P(t, T.start + 0.8, T.start + 1.6));
     ctx.save(); ctx.translate(lerp(285, -120, k), lerp(-185, -195, k)); ctx.rotate(lerp(0, -0.25, k) + wob(t - T.start - 1.6, 6, 18) * 0.2);
     ctx.shadowColor = C.goldL; ctx.shadowBlur = 30 * k; ctx.fillStyle = '#FFF6E0'; ctx.fillRect(-60, -10, 120, 18);
     ctx.restore();
     tag(ctx, 'ONE PAGE', lerp(285, -120, k), -260, t - T.start - 1.4, C.gold, '#2A1600', 24);
   }
-  tag(ctx, 'LAZY?', -230, -330, t - T.lazyQ, C.red, '#fff', 30);
+  if (t < T.start + 0.2) tag(ctx, 'LAZY?', -230, -330, t - T.lazyQ, C.red, '#fff', 30);
   const q = E.outBack(P(t, T.lazyQ + 0.3, T.lazyQ + 0.6)) * (1 - P(t, T.toScale, T.toScale + 0.2));
   if (q > 0) {
     ctx.save(); ctx.translate(-80, -330); ctx.scale(q, q); ctx.rotate(0.15 + wob(t - T.lazyQ - 0.3, 5, 14) * 0.3);
@@ -526,17 +583,9 @@ function kinetic(ctx, t) {
   for (const w of WORDS) if (t >= w[0]) cur = w;
   if (!cur || t > T.end) return;
   const [t0, word, kind = ''] = cur, d = t - t0;
-  // LAZY. flies out of the room toward the scale (it becomes the block)
-  if (word === 'LAZY.' && t > T.fly) {
-    const k = E.inExpo(P(t, T.fly, T.toScale + 0.2));
-    if (k >= 1) return;
-    ctx.save(); ctx.translate(lerp(W / 2, W + 300, k), lerp(1610, 700, k)); ctx.rotate(k * 0.8); ctx.scale(1 - k * 0.4, 1 - k * 0.4);
-    ctx.font = `900 140px ${DISP}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.red; ctx.fillText('LAZY', 0, 0);
-    ctx.restore(); return;
-  }
-  let size = kind === 'fear' ? 230 : kind === 'small' ? 210 : kind === 'stretch' ? 112 : 140;
+  let size = kind === 'fear' ? 230 : kind === 'small' ? 210 : kind.endsWith('Big') ? 220 : kind === 'stretch' ? 112 : 140;
   if (kind === 'small') size = lerp(210, 80, E.outBack(P(d, 0.45, 0.8)));            // SMALL gets small
-  const pal = kind === 'fear' || kind === 'red' || kind === 'crack' ? PAL.red : kind === 'cyan' || kind === 'flip' ? PAL.cyan : kind === 'gold' || kind === 'small' ? PAL.gold : PAL.base;
+  const pal = kind === 'fear' || kind === 'red' || kind === 'crack' ? PAL.red : kind === 'cyan' || kind === 'cyanBig' || kind === 'flip' ? PAL.cyan : kind === 'gold' || kind === 'goldBig' || kind === 'small' ? PAL.gold : PAL.base;
   ctx.save();
   ctx.font = `900 ${size}px ${DISP}`; ctx.textBaseline = 'middle';
   let tw = ctx.measureText(word).width, sz = size;
