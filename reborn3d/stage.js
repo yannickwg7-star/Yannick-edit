@@ -62,7 +62,7 @@ const M = {
   white: new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.4, envMapIntensity: 0.35, emissive: 0x000000 }),
   grey: new THREE.MeshStandardMaterial({ color: 0x6e737d, roughness: 0.7, envMapIntensity: 0.3 }),
   gold: new THREE.MeshStandardMaterial({ color: 0xffb21f, metalness: 1, roughness: 0.2, envMapIntensity: 1.3 }),
-  steel: new THREE.MeshStandardMaterial({ color: 0xb8c0cc, metalness: 1, roughness: 0.28, envMapIntensity: 1.1 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0x9aa2ae, metalness: 1, roughness: 0.32, envMapIntensity: 0.5 }),
   dark: new THREE.MeshStandardMaterial({ color: 0x14161b, roughness: 0.35, metalness: 0.2, envMapIntensity: 0.6 }),
   wood: new THREE.MeshStandardMaterial({ color: 0x4a3426, roughness: 0.55, envMapIntensity: 0.4 }),
   glowA: new THREE.MeshBasicMaterial({ color: 0xffab00 }), glowE: new THREE.MeshBasicMaterial({ color: 0x00e676 }),
@@ -83,10 +83,11 @@ function makeFigure(mat) {
   const pelvis = capsule(0.14, 0.12, mat); pelvis.rotation.z = Math.PI / 2; hips.add(pelvis);
   const neck = new THREE.Group(); neck.position.y = 0.66; torso.add(neck);
   const head = mesh(new THREE.SphereGeometry(0.15, 32, 24), mat); head.position.y = 0.17; neck.add(head);
-  const limb = (p, x, y, l1, l2, r) => { const j1 = new THREE.Group(); j1.position.set(x, y, 0); p.add(j1); const a = capsule(r, l1, mat); a.position.y = -l1 / 2 - r * 0.3; j1.add(a); const j2 = new THREE.Group(); j2.position.y = -l1 - r * 0.6; j1.add(j2); const b = capsule(r * 0.92, l2, mat); b.position.y = -l2 / 2 - r * 0.3; j2.add(b); return [j1, j2]; };
+  const limb = (p, x, y, l1, l2, r) => { const j1 = new THREE.Group(); j1.position.set(x, y, 0); p.add(j1); const a = capsule(r, l1, mat); a.position.y = -l1 / 2 - r * 0.3; j1.add(a); const j2 = new THREE.Group(); j2.position.y = -l1 - r * 0.6; j1.add(j2); const b = capsule(r * 0.92, l2, mat); b.position.y = -l2 / 2 - r * 0.3; j2.add(b); const end = new THREE.Object3D(); end.position.y = -l2 - r * 0.6; j2.add(end); j1.userData.end = end; return [j1, j2]; };
   const [shL, elL] = limb(torso, -0.25, 0.58, 0.26, 0.24, 0.058), [shR, elR] = limb(torso, 0.25, 0.58, 0.26, 0.24, 0.058);
   const [hipL, knL] = limb(hips, -0.1, 0, 0.36, 0.36, 0.07), [hipR, knR] = limb(hips, 0.1, 0, 0.36, 0.36, 0.07);
-  return { root, hips, torso, neck, shL, elL, shR, elR, hipL, knL, hipR, knR };
+  const headC = new THREE.Object3D(); headC.position.y = 0.17; neck.add(headC); const top = new THREE.Object3D(); top.position.y = 0.6; torso.add(top);
+  return { root, hips, torso, neck, headC, top, shL, elL, shR, elR, hipL, knL, hipR, knR };
 }
 const POSE = {
   stand: { sp: 0, hd: 0, shLx: 0, shLz: 0.08, elL: 0, shRx: 0, shRz: -0.08, elR: 0, hpL: 0, knL: 0, hpR: 0, knR: 0, y: 0 },
@@ -100,6 +101,39 @@ const mix = (a, b, k) => { const o = {}; for (const n in a) o[n] = lerp(a[n], b[
 function walk(base, ph, amt = 1) { const o = { ...base }, s = Math.sin(ph) * amt; o.hpL += 0.45 * s; o.hpR -= 0.45 * s; o.knL += 0.5 * Math.max(0, -Math.sin(ph)) * amt; o.knR += 0.5 * Math.max(0, Math.sin(ph)) * amt; o.shLx -= 0.35 * s; o.shRx += 0.35 * s; o.y += 0.025 * Math.abs(Math.cos(ph)) * amt; return o; }
 function pose(f, p) { f.hips.position.y = 0.92 + p.y; f.torso.rotation.x = p.sp; f.neck.rotation.x = p.hd; f.shL.rotation.set(p.shLx, 0, p.shLz); f.elL.rotation.x = p.elL; f.shR.rotation.set(p.shRx, 0, p.shRz); f.elR.rotation.x = p.elR; f.hipL.rotation.x = p.hpL; f.knL.rotation.x = p.knL; f.hipR.rotation.x = p.hpR; f.knR.rotation.x = p.knR; }
 const hero = makeFigure(M.white); add(hero.root);
+// ── the 2D character: the rig is flattened onto a camera-facing card and drawn as a flat figure ──
+const PW = 1.5, PH = 3.0, PXM = 512 / PW;                 // card size (m) and pixels per metre
+const figTex = canvasTex(512, 1024, () => {});
+const figMat = new THREE.MeshStandardMaterial({ map: figTex.tx, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.55, envMapIntensity: 0.2, emissive: 0xffffff, emissiveMap: figTex.tx, emissiveIntensity: 0 });
+const card = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), figMat); card.castShadow = true;
+card.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: figTex.tx, alphaTest: 0.5 });
+scene.add(card);
+const _a = new THREE.Vector3(), _r = new THREE.Vector3(), _f = new THREE.Vector3();
+function drawHero2D(f, glowHex) {
+  f.root.visible = false; f.root.updateMatrixWorld(true);
+  const root = f.root.position;
+  _r.set(camera.position.x - root.x, 0, camera.position.z - root.z).normalize();   // toward camera
+  _f.copy(_r); const right = new THREE.Vector3(_r.z, 0, -_r.x);
+  card.position.set(root.x, root.y + PH / 2 - 0.12, root.z); card.rotation.set(0, Math.atan2(_r.x, _r.z), 0);
+  card.scale.copy(f.root.scale);
+  const J = o => { o.getWorldPosition(_a); const d = _a.clone().sub(root); return [256 + d.dot(right) * PXM, 1024 - (d.y + 0.12) * PXM, d.dot(_f)]; };
+  const g = figTex.g; g.clearRect(0, 0, 512, 1024);
+  const sh = J(f.shL), sR = J(f.shR), eL = J(f.elL), eR = J(f.elR), hL = J(f.shL.userData.end), hR = J(f.shR.userData.end);
+  const pL = J(f.hipL), pR = J(f.hipR), kL = J(f.knL), kR = J(f.knR), fL = J(f.hipL.userData.end), fR = J(f.hipR.userData.end);
+  const hd = J(f.headC), pel = J(f.hips), top = J(f.top);
+  const limbs = [
+    { pts: [pL, kL, fL], w: 46, z: (pL[2] + fL[2]) / 2 }, { pts: [pR, kR, fR], w: 46, z: (pR[2] + fR[2]) / 2 },
+    { pts: [sh, eL, hL], w: 38, z: (sh[2] + hL[2]) / 2 }, { pts: [sR, eR, hR], w: 38, z: (sR[2] + hR[2]) / 2 },
+  ];
+  const torso = { pts: [[pel[0], pel[1] - 10], [top[0], top[1]]], w: 104, z: 0, torso: true };
+  const order = [...limbs.filter(l => l.z < -0.01), torso, ...limbs.filter(l => l.z >= -0.01)].sort((a, b) => (a.torso ? 0 : a.z) - (b.torso ? 0 : b.z));
+  const stroke = (pts, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+  for (const l of order) { stroke(l.pts, l.w + 14, '#0a0a0a'); stroke(l.pts, l.w, l.z < -0.01 && !l.torso ? '#d9d9dc' : '#f4f4f6'); }
+  g.fillStyle = '#0a0a0a'; g.beginPath(); g.arc(hd[0], hd[1], 64, 0, TAU); g.fill();
+  g.fillStyle = '#f4f4f6'; g.beginPath(); g.arc(hd[0], hd[1], 57, 0, TAU); g.fill();
+  figTex.tx.needsUpdate = true;
+  figMat.emissive.setHex(glowHex);
+}
 const CHEST = () => new THREE.Vector3(hero.root.position.x, hero.root.position.y + 1.32, hero.root.position.z + 0.12);
 
 // ───────── helpers ─────────
@@ -278,8 +312,7 @@ function update(t) {
   ring.scale.setScalar(t < 0.4 ? E.outExpo(P(t, 0, 0.35)) : 1); M.ringMat.opacity = 0.85;
   ring.rotation.z = t * 0.1;
   // hero
-  const h = heroAt(t); hero.root.visible = h.vis; hero.root.position.set(...h.p); hero.root.rotation.y = h.ry; pose(hero, h.ps);
-  M.white.emissive.copy(h.glowCol); M.white.emissiveIntensity = h.glow * 0.42;
+  const h = heroAt(t); hero.root.position.set(...h.p); hero.root.rotation.y = h.ry; pose(hero, h.ps);
   glowL.color.copy(h.glowCol); glowL.position.set(h.p[0] + 0.4, 2.4, h.p[2] + 1.2);
   let gl = h.glow * 2.5; for (const d of [28.45, 33.4, 41.3]) { const q = t - d; if (q > 0 && q < 1.2) gl += 8 * Math.exp(-q * 3.5); } glowL.intensity = gl;
   // 1 · polaroid + embers
@@ -360,6 +393,7 @@ function update(t) {
   bloom.strength = 0.42 + (DROPS.some(d => t - d > 0 && t - d < 0.6) ? 0.35 * Math.max(...DROPS.map(d => t - d > 0 && t - d < 0.6 ? Math.exp(-(t - d) * 4) : 0)) : 0);
   renderer.toneMappingExposure = 1 - 0.0 * end;
   const c = cameraAt(t); camera.position.set(...c.pos); camera.lookAt(...c.tgt);
+  card.visible = h.vis; if (h.vis) { drawHero2D(hero, h.glowCol.getHex()); figMat.emissiveIntensity = h.glow * 0.5; }
 }
 
 // ───────── overlay ─────────
