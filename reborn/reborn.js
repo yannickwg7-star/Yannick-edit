@@ -201,6 +201,8 @@ function glowDisc(ctx, x, y, r, col, a) {
 // chunky faceless figure (front view), feet at y
 function figure(ctx, x, y, s, { body = C.steelL, dark = C.steelD, rim = null, arms = 0, head = 0 } = {}) {
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  const cs = ctx.createRadialGradient(0, 4, 0, 0, 4, 120); cs.addColorStop(0, 'rgba(0,0,0,0.55)'); cs.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = cs; ctx.save(); ctx.scale(1, 0.22); ctx.fillRect(-120, -100, 240, 240); ctx.restore();
   if (rim) { ctx.shadowColor = rim; ctx.shadowBlur = 40; }
   ctx.fillStyle = shade(ctx, -40, 0, 40, 0, body, dark);
   ctx.beginPath(); ctx.roundRect(-34, -140, 30, 140, 10); ctx.fill(); ctx.beginPath(); ctx.roundRect(4, -140, 30, 140, 10); ctx.fill();
@@ -271,10 +273,20 @@ function trophy(ctx, x, y, s, col = C.amber) {
   ctx.restore();
 }
 function sceneWin(ctx, t) {
-  const s = spring(t - 3.7, 2.8, 0.42), out = E.inCubic(P(t, 5.15, 5.4));
+  const form = E.inOutCubic(P(t, 3.6, 3.95)), s = spring(t - 3.82, 2.8, 0.42);
+  const flip = Math.cos(Math.PI / 2 * E.inCubic(P(t, 5.0, 5.3)));
   ring(ctx, t, 330 + 20 * Math.sin(t * 3), C.amber, 0.9);
   glowDisc(ctx, CX, CY, 500, C.amber, 0.22 * s);
-  if (s > 0) trophy(ctx, CX, CY + 40 + out * 300, s * (1 - out), C.amber);
+  if (form < 1) {      // the embers of the old self fly together and become the goal
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const e of EMB) {
+      const sx = CX + (e.v - 0.5) * 520 + e.vx * 0.6, sy = CY - 240 - e.u * 300 + e.vy * 0.2;
+      const tx = CX + (e.v - 0.5) * 230 * (1 - e.u * 0.5), ty = CY - 120 + e.u * 260;
+      ctx.fillStyle = hexA(C.amberL, 0.9 * (1 - form * 0.7)); ctx.beginPath(); ctx.arc(lerp(sx, tx, form), lerp(sy, ty, form), e.s, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+  if (s > 0) { ctx.save(); ctx.translate(CX, CY + 40); ctx.scale(flip, 1); trophy(ctx, 0, 0, s, C.amber); ctx.restore(); }
   tag(ctx, 'GOAL: WIN', CX, CY + 290, t - 4.1, C.amber);
 }
 // 5.3–9.4 · the clock-ring spins, shatters → REBORN: the new self rises in emerald
@@ -285,7 +297,7 @@ function sceneReborn(ctx, t) {
     ring(ctx, t, 330, C.amber, 1, 8);
     const spin = E.inCubic(ck) * 40 + t;
     ctx.save(); ctx.strokeStyle = C.ink; ctx.lineCap = 'round';
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; ctx.lineWidth = i % 3 ? 4 : 8; ctx.beginPath(); ctx.moveTo(CX + Math.cos(a) * 290, CY + Math.sin(a) * 290); ctx.lineTo(CX + Math.cos(a) * 310, CY + Math.sin(a) * 310); ctx.stroke(); }
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, k = spring(t - 5.3 - i * 0.025, 3.5, 0.45); if (k <= 0) continue; ctx.lineWidth = i % 3 ? 4 : 8; ctx.beginPath(); ctx.moveTo(CX + Math.cos(a) * 290, CY + Math.sin(a) * 290); ctx.lineTo(CX + Math.cos(a) * (290 + 20 * k + (i % 3 ? 0 : 14 * k)), CY + Math.sin(a) * (290 + 20 * k + (i % 3 ? 0 : 14 * k))); ctx.stroke(); }
     ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(CX + Math.cos(spin * 0.1 - 1.5) * 150, CY + Math.sin(spin * 0.1 - 1.5) * 150); ctx.stroke();
     ctx.lineWidth = 7; ctx.strokeStyle = C.amber; ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(CX + Math.cos(spin - 1.5) * 250, CY + Math.sin(spin - 1.5) * 250); ctx.stroke();
     ctx.restore();
@@ -356,6 +368,8 @@ function sceneMirror(ctx, t) {
   const m = E.inOutCubic(P(t, 14.7, 15.6));                       // door → mirror morph
   const mw = lerp(330, 380, m), mh = lerp(560, 620, m);
   ctx.save();
+  const fl = Math.cos(Math.PI / 2 * E.inCubic(P(t, 19.1, 19.45)));   // card-flip out to the blueprint
+  ctx.translate(CX, CY); ctx.scale(fl, 1); ctx.translate(-CX, -CY);
   ctx.fillStyle = C.steelD; ctx.beginPath(); ctx.roundRect(CX - mw / 2 - 28, CY - mh / 2 - 28, mw + 56, mh + 56, lerp(14, mw / 2, m) * 0.35 + 14); ctx.fill();
   ctx.save(); ctx.beginPath(); ctx.roundRect(CX - mw / 2, CY - mh / 2, mw, mh, lerp(8, mw / 2, m) * 0.35 + 8); ctx.clip();
   ctx.fillStyle = shade(ctx, CX - mw / 2, CY - mh / 2, CX + mw / 2, CY + mh / 2, '#2D3442', '#0F1218'); ctx.fillRect(CX - mw / 2, CY - mh / 2, mw, mh);
@@ -382,14 +396,13 @@ function sceneMirror(ctx, t) {
     ctx.restore();
   }
   ring(ctx, t, lerp(0, 420, E.outExpo(P(t, 17.4, 17.9))), C.emer, 1 - P(t, 18.8, 19.4));
-  tag(ctx, 'YOU', CX, CY - 380, t - 15.9, C.ink);
-  if (glow > 0) tag(ctx, 'CHANGE ✓', CX, CY + 380, t - 18.0, C.emer);
+  if (t < 19.1) { tag(ctx, 'YOU', CX, CY - 380, t - 15.9, C.ink); if (glow > 0) tag(ctx, 'CHANGE ✓', CX, CY + 380, t - 18.0, C.emer); }
 }
 // 19.4–22.3 · your plan on a blueprint; the world rolls through it
 function sceneBlueprint(ctx, t) {
-  const inn = spring(t - 19.4, 2.8, 0.5), brk = E.outExpo(P(t, 21.1, 21.6));
+  const inn = spring(t - 19.45, 2.6, 0.5), brk = E.outExpo(P(t, 21.1, 21.6));
   const bw = 600, bh = 520;
-  ctx.save(); ctx.translate(CX, CY); ctx.scale(inn, inn); ctx.rotate(-0.04);
+  ctx.save(); ctx.translate(CX, CY); ctx.scale(Math.max(0.001, inn), 1); ctx.rotate(-0.04 * clamp(inn));
   ctx.fillStyle = '#0E2A4A'; ctx.beginPath(); ctx.roundRect(-bw / 2, -bh / 2, bw, bh, 14); ctx.fill();
   ctx.strokeStyle = 'rgba(150,200,255,0.18)'; ctx.lineWidth = 1.5;
   for (let x = -bw / 2; x <= bw / 2; x += 40) { ctx.beginPath(); ctx.moveTo(x, -bh / 2); ctx.lineTo(x, bh / 2); ctx.stroke(); }
@@ -410,17 +423,17 @@ function sceneBlueprint(ctx, t) {
   ctx.fillStyle = '#CFE6FF'; ctx.font = `800 34px ${MONO}`; ctx.textAlign = 'center'; ctx.fillText('A', -260, 182); ctx.fillText('B', 250, -200);
   ctx.restore();
   // the world rolling across the plan
-  const wx = lerp(CX + 560, CX - 30, E.inOutCubic(P(t, 20.5, 21.15))), wr = 120;
+  const toC = E.inOutCubic(P(t, 21.7, 22.35));
+  const wx = lerp(lerp(CX + 560, CX - 30, E.inOutCubic(P(t, 20.5, 21.15))), CX, toC), wr = 120 * (1 + 0.5 * toC);
   if (t > 20.5) {
-    ctx.save(); ctx.translate(wx, CY + 40); ctx.rotate(-(wx - CX) / wr);
+    ctx.save(); ctx.translate(wx, CY + 40 * (1 - toC)); ctx.rotate(-(wx - CX) / 120 + toC * 3);
     ctx.shadowColor = C.emer; ctx.shadowBlur = 30;
     ctx.fillStyle = shade(ctx, -wr, -wr, wr, wr, '#3D8BFF', '#123A8C'); ctx.beginPath(); ctx.arc(0, 0, wr, 0, TAU); ctx.fill();
     ctx.shadowBlur = 0; ctx.fillStyle = '#2FD089';
     for (const [x, y, r] of [[-40, -30, 46], [50, 40, 38], [20, -70, 24], [-60, 60, 22]]) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
     ctx.restore();
   }
-  tag(ctx, 'YOUR PLAN', CX - 170, CY - 340, t - 19.8, C.ink, 22);
-  if (brk > 0) tag(ctx, 'PLAN ✕', CX + 160, CY + 330, t - 21.3, C.amber);
+  if (t < 21.8) { tag(ctx, 'YOUR PLAN', CX - 170, CY - 340, t - 19.8, C.ink, 22); if (brk > 0) tag(ctx, 'PLAN ✕', CX + 160, CY + 330, t - 21.3, C.amber); }
 }
 // 22.3–25.8 · gears: fix it → fix YOU (gears lock into the figure's chest)
 function gear(ctx, x, y, r, teeth, a, col) {
@@ -432,18 +445,23 @@ function gear(ctx, x, y, r, teeth, a, col) {
   ctx.restore();
 }
 function sceneFix(ctx, t) {
-  const inn = spring(t - 22.35, 2.8, 0.5), lock = E.inOutCubic(P(t, 23.7, 24.15)), spin = t * 2.2 + E.inCubic(P(t, 22.4, 23.7)) * 6;
+  const chest = [CX, CY + 330 - 1.15 * 220], dive = E.inExpo(P(t, 25.4, 25.85));
+  ctx.save(); ctx.translate(chest[0], chest[1]); ctx.scale(1 + dive * 9, 1 + dive * 9); ctx.translate(-chest[0], -chest[1]);
+  const lock = E.inOutCubic(P(t, 23.7, 24.15)), spin = t * 2.2 + E.inCubic(P(t, 22.4, 23.7)) * 6;
+  const gl = 1 - E.inCubic(P(t, 22.35, 22.7));             // the globe collapses into the gear hub
+  if (gl > 0) { ctx.save(); ctx.translate(CX, CY); ctx.fillStyle = shade(ctx, -180, -180, 180, 180, '#3D8BFF', '#123A8C'); ctx.beginPath(); ctx.arc(0, 0, 180 * gl, 0, TAU); ctx.fill(); ctx.restore(); }
   const fig = spring(t - 23.85, 2.4, 0.55);
   if (fig > 0) figure(ctx, CX, CY + 330, 1.15 * fig, { body: t > 24 ? '#E9FFF3' : '#8E98AE', dark: t > 24 ? '#5FC995' : '#4A5266', rim: t > 24 ? C.emer : null });
   const G = [[-190, -130, 90, 10, C.steelL], [160, -190, 70, 8, C.steel], [180, 120, 110, 12, C.steelL], [-160, 170, 64, 8, C.steel]];
   G.forEach(([gx, gy, r, n, col], i) => {
-    const x = lerp(CX + gx, CX, lock), y = lerp(CY + gy, CY + 330 - 1.15 * 220, lock), rr = lerp(r, i === 2 ? 60 : 0.01, lock);
-    if (rr < 1) return;
-    gear(ctx, x, y, rr * inn, n, spin * (i % 2 ? -1 : 1) * (100 / r), lock > 0.9 ? C.emer : col);
+    const out = spring(t - 22.42 - i * 0.05, 2.6, 0.5);
+    const x = lerp(CX + gx * out, chest[0], lock), y = lerp(CY + gy * out, chest[1], lock), rr = lerp(r, i === 2 ? 60 : 0.01, lock);
+    if (rr < 1 || out <= 0) return;
+    gear(ctx, x, y, rr * clamp(out, 0, 1.2), n, spin * (i % 2 ? -1 : 1) * (100 / r), lock > 0.9 ? C.emer : col);
   });
-  if (t > 24.0) { const k = kick(t - 24.0, 7, 20); glowDisc(ctx, CX, CY + 330 - 1.15 * 220, 260 + 60 * k, C.emer, 0.5); }
-  tag(ctx, 'FIX IT?', CX, CY - 360, t - 22.6, C.ink, 22);
-  if (t > 24.1) tag(ctx, 'FIX: YOU', CX, CY - 360, t - 24.1, C.emer);
+  if (t > 24.0) { const k = kick(t - 24.0, 7, 20); glowDisc(ctx, chest[0], chest[1], 260 + 60 * k + dive * 400, C.emer, 0.5 + dive * 0.5); }
+  ctx.restore();
+  if (dive < 0.2) { tag(ctx, 'FIX IT?', CX, CY - 360, t - 22.6, C.ink, 22); if (t > 24.1) tag(ctx, 'FIX: YOU', CX, CY - 360, t - 24.1, C.emer); }
 }
 // 25.8–30.6 · a dark corridor with an invisible goal → he becomes the light
 function sceneLight(ctx, t) {
@@ -561,92 +579,185 @@ function phraseAt(t) {
   let pi = -1; PHRASES.forEach((p, i) => { if (t >= p[0] - 0.02) pi = i; });
   return pi;
 }
+const WCACHE = {};
+function wordArt(word, size, fill, depthCol) {
+  const key = word + size + fill; if (WCACHE[key]) return WCACHE[key];
+  const c = document.createElement('canvas'), g = c.getContext('2d'); g.font = `900 ${size}px ${DISP}`;
+  const w = Math.ceil(g.measureText(word).width + size * 0.5), h = Math.ceil(size * 1.5);
+  c.width = w; c.height = h; g.font = `900 ${size}px ${DISP}`; g.textBaseline = 'middle'; g.textAlign = 'center';
+  for (let i = 7; i > 0; i--) { g.fillStyle = depthCol; g.globalAlpha = 0.9 - i * 0.07; g.fillText(word, w / 2 + i * 0.7, h / 2 + i * 1.3); }   // extrusion
+  g.globalAlpha = 1;
+  const gr = g.createLinearGradient(0, h * 0.2, 0, h * 0.8); gr.addColorStop(0, '#FFFFFF'); gr.addColorStop(0.45, fill); gr.addColorStop(1, fill);
+  g.fillStyle = gr; g.fillText(word, w / 2, h / 2);
+  return (WCACHE[key] = { c, w, h });
+}
+const SWC = document.createElement('canvas'); SWC.width = 1200; SWC.height = 320; const swc = SWC.getContext('2d');
+function sweep(ctx, art, x, y, s, p) {   // specular light band sliding across the word
+  swc.setTransform(1, 0, 0, 1, 0, 0); swc.globalCompositeOperation = 'source-over'; swc.clearRect(0, 0, SWC.width, SWC.height);
+  swc.drawImage(art.c, 0, 0);
+  swc.globalCompositeOperation = 'source-atop';
+  const bx = lerp(-art.w * 0.4, art.w * 1.4, p);
+  const g = swc.createLinearGradient(bx - 90, 0, bx + 90, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.85)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  swc.fillStyle = g; swc.setTransform(1, 0, -0.35, 1, 0, 0); swc.fillRect(bx - 200, 0, 400 + art.h, art.h);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(SWC, 0, 0, art.w, art.h, x - art.w * s / 2, y - art.h * s / 2, art.w * s, art.h * s); ctx.restore();
+}
 function typography(ctx, t) {
   const pi = phraseAt(t); if (pi < 0) return;
   const [t0, t1] = PHRASES[pi], next = PHRASES[pi + 1] ? PHRASES[pi + 1][0] : DUR;
   const out = E.inCubic(P(t, Math.min(t1 + 0.35, next - 0.12), next - 0.02));
   const ws = WORDS.filter(w => w.pi === pi), nLines = Math.max(...ws.map(w => w.li)) + 1;
-  const big = ws.length <= 4, size = big ? 132 : ws.length <= 6 ? 112 : 92, lh = size * 1.06;
+  const big = ws.length <= 4, size = big ? 132 : ws.length <= 6 ? 112 : 92, lh = size * 1.08;
   const spoken = ws.filter(w => t >= w.t), active = spoken[spoken.length - 1];
-  ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.globalAlpha = 1 - out;
-  const oy = -out * 40;
   for (let li = 0; li < nLines; li++) {
     const lw = ws.filter(w => w.li === li);
-    const sizes = lw.map(w => (w.accent ? size * 1.12 : size));
+    const sizes = lw.map(w => Math.round(w.accent ? size * 1.14 : size));
+    ctx.font = `900 ${size}px ${DISP}`;
     const widths = lw.map((w, i) => { ctx.font = `900 ${sizes[i]}px ${DISP}`; return ctx.measureText(w.word).width; });
     const gap = size * 0.26, total = widths.reduce((a, b) => a + b, 0) + gap * (lw.length - 1);
-    let sc = total > 960 ? 960 / total : 1;
+    const sc = total > 960 ? 960 / total : 1;
     let x = CX - total * sc / 2;
-    const y = TY + (li - (nLines - 1) / 2) * lh + oy;
+    const y = TY + (li - (nLines - 1) / 2) * lh - out * 40;
     lw.forEach((w, i) => {
-      const d = t - w.t, s = spring(d, 3.4, 0.38);
-      if (d < 0) { x += (widths[i] + gap) * sc; return; }
-      const isActive = active === w, col = w.col === 'e' ? C.emer : C.amber;
-      ctx.save();
-      ctx.translate(x + widths[i] * sc / 2, y + (1 - s) * 46);
-      const pop = lerp(0.55, 1, s) * sc * (isActive ? 1 + 0.04 * Math.exp(-d * 4) : 1);
-      ctx.scale(pop, pop);
-      ctx.font = `900 ${sizes[i]}px ${DISP}`;
-      ctx.globalAlpha = (1 - out) * clamp(d / 0.06) * (isActive || w.accent ? 1 : 0.38);
-      // organic bloom on the active / accent word
-      if (isActive || (w.accent && d < 1.2)) {
-        ctx.shadowColor = w.accent ? col : 'rgba(244,244,246,0.8)'; ctx.shadowBlur = w.accent ? 46 : 26;
-      }
-      ctx.fillStyle = w.accent ? col : (isActive ? C.ink : '#9DA2AE');
-      ctx.fillText(w.word, -widths[i] / 2, 0);
-      if (w.accent) { ctx.shadowBlur = 0; ctx.globalAlpha *= 0.35; ctx.fillStyle = '#FFFFFF'; ctx.fillText(w.word, -widths[i] / 2, -2); }
-      ctx.restore();
+      const d = t - w.t, cx = x + widths[i] * sc / 2;
       x += (widths[i] + gap) * sc;
+      if (d < 0) return;
+      const isActive = active === w, col = w.col === 'e' ? C.emer : C.amber;
+      const fill = w.accent ? col : isActive ? C.ink : '#8E93A0';
+      const art = wordArt(w.word, sizes[i], fill, w.accent ? (w.col === 'e' ? '#00552F' : '#5C3800') : '#15171C');
+      const s = spring(d, 3.4, 0.4), rise = spring(d, 4.2, 0.62);
+      const pop = sc * lerp(0.82, 1, s) * (isActive ? 1 + 0.05 * Math.exp(-d * 5) : 1);
+      // mask reveal: the word rises out of its own line
+      ctx.save();
+      ctx.beginPath(); ctx.rect(cx - art.w * pop, y - sizes[i] * 0.78 * pop, art.w * pop * 2, sizes[i] * 1.6 * pop); ctx.clip();
+      ctx.globalAlpha = (1 - out) * (isActive || w.accent ? 1 : 0.5);
+      if (isActive || (w.accent && d < 1.5)) { ctx.shadowColor = w.accent ? hexA(col, 0.75) : 'rgba(244,244,246,0.45)'; ctx.shadowBlur = w.accent ? 26 : 14; }
+      const yy = y + (1 - rise) * sizes[i] * 0.95;
+      ctx.drawImage(art.c, cx - art.w * pop / 2, yy - art.h * pop / 2, art.w * pop, art.h * pop);
+      ctx.restore();
+      if (w.accent && d > 0.12 && d < 0.75) sweep(ctx, art, cx, yy, pop, P(d, 0.12, 0.75));
+      if (w.accent && d < 0.55) {     // echo pulse
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        for (let k = 1; k <= 2; k++) {
+          const e = d * (1.2 + k * 0.5), a = (0.55 - d) * 0.28 / k;
+          ctx.globalAlpha = Math.max(0, a); const es = pop * (1 + e * 0.6);
+          ctx.drawImage(art.c, cx - art.w * es / 2, yy - art.h * es / 2, art.w * es, art.h * es);
+        }
+        ctx.restore();
+      }
     });
   }
-  ctx.restore();
 }
 
 // ───────── composition ─────────
 const SCENES = [[0, 3.6, sceneMemory], [3.6, 5.3, sceneWin], [5.3, 9.4, sceneReborn], [9.4, 14.75, sceneDoor], [14.75, 19.45, sceneMirror],
   [19.45, 22.35, sceneBlueprint], [22.35, 25.85, sceneFix], [25.85, 30.7, sceneLight], [30.7, 35.5, sceneDevour], [35.5, 40.7, sceneDestroy], [40.7, 45.71, sceneAgain]];
+const OL = document.createElement('canvas'); OL.width = W; OL.height = H; const ol = OL.getContext('2d');
+const RL = document.createElement('canvas'); RL.width = W; RL.height = H; const rl = RL.getContext('2d');
 function renderScene(ctx, t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0;
   const cam = camera(t);
   background(ctx, t, cam);
-  ctx.save();
-  ctx.translate(CX + cam.sx, CY + cam.sy); ctx.rotate(cam.rot); ctx.scale(cam.z, cam.z); ctx.translate(-CX, -CY);
+  ol.setTransform(1, 0, 0, 1, 0, 0); ol.globalAlpha = 1; ol.globalCompositeOperation = 'source-over'; ol.shadowBlur = 0; ol.clearRect(0, 0, W, H);
+  ol.save();
+  ol.translate(CX + cam.sx, CY + cam.sy); ol.rotate(cam.rot); ol.scale(cam.z, cam.z); ol.translate(-CX, -CY);
   const sc = SCENES.find(s => t >= s[0] && t < s[1]) || SCENES[SCENES.length - 1];
-  // scene entry: quick spatial snap (scale from 0.9 + fade) for every scene except the hook
-  const ent = sc[0] > 0 ? E.outExpo(P(t, sc[0], sc[0] + 0.25)) : 1;
-  ctx.translate(CX, CY); ctx.scale(lerp(0.92, 1, ent), lerp(0.92, 1, ent)); ctx.translate(-CX, -CY);
-  ctx.globalAlpha = lerp(0.2, 1, ent);
-  sc[2](ctx, t);
-  ctx.globalAlpha = 1;
-  ctx.restore();
+  const ent = sc[0] > 0 ? E.outExpo(P(t, sc[0], sc[0] + 0.22)) : 1;
+  ol.translate(CX, CY); ol.scale(lerp(0.94, 1, ent), lerp(0.94, 1, ent)); ol.translate(-CX, -CY);
+  ol.globalAlpha = lerp(0.35, 1, ent);
+  sc[2](ol, t);
+  ol.restore();
+  // glossy floor: reflect the object layer below the floor line, fading with distance
+  const floor = CY + 385 * cam.z + cam.sy;
+  rl.setTransform(1, 0, 0, 1, 0, 0); rl.globalCompositeOperation = 'source-over'; rl.clearRect(0, 0, W, H);
+  rl.save(); rl.translate(0, floor * 2); rl.scale(1, -1); rl.drawImage(OL, 0, 0); rl.restore();
+  rl.globalCompositeOperation = 'destination-in';
+  const fg = rl.createLinearGradient(0, floor, 0, floor + 360); fg.addColorStop(0, 'rgba(0,0,0,0.26)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
+  rl.fillStyle = fg; rl.fillRect(0, 0, W, H);
+  rl.globalCompositeOperation = 'destination-out'; rl.fillStyle = '#000'; rl.fillRect(0, 0, W, floor);
+  ctx.drawImage(RL, 0, 0);
+  ctx.drawImage(OL, 0, 0);
   ctx.save(); ctx.translate(cam.sx * 0.5, cam.sy * 0.5); typography(ctx, t); ctx.restore();
-  // drop flash
-  for (const d of DROPS) { const q = t - d; if (q >= 0 && q < 0.18) { ctx.fillStyle = `rgba(255,248,230,${0.35 * (1 - q / 0.18)})`; ctx.fillRect(0, 0, W, H); } }
-  // vignette
-  const g = ctx.createRadialGradient(CX, CY + 120, H * 0.28, CX, CY + 120, H * 0.8);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.72)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 }
 
-const main = document.getElementById('c'); main.width = W; main.height = H;
-const mctx = main.getContext('2d');
-const scratch = document.createElement('canvas'); scratch.width = W; scratch.height = H;
-const sctx = scratch.getContext('2d');
-let NOISE;
-function grain(frame) {
-  if (!NOISE) { NOISE = document.createElement('canvas'); NOISE.width = NOISE.height = 256; const n = NOISE.getContext('2d'), id = n.createImageData(256, 256), r = rng(99); for (let i = 0; i < id.data.length; i += 4) { const v = r() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } n.putImageData(id, 0, 0); }
-  mctx.save(); mctx.globalCompositeOperation = 'overlay'; mctx.globalAlpha = 0.085;
-  const pat = mctx.createPattern(NOISE, 'repeat'); pat.setTransform(new DOMMatrix().translate((frame * 53) % 256, (frame * 97) % 256).scale(1.5));
-  mctx.fillStyle = pat; mctx.fillRect(0, 0, W, H); mctx.restore();
+// ───────── post: bloom, zoom-through blur, chromatic aberration, lens warp, grade, grain (WebGL) ─────────
+const GLC = document.getElementById('c'); GLC.width = W; GLC.height = H;
+const gl = GLC.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+const ACC = document.createElement('canvas'); ACC.width = W; ACC.height = H; const acc = ACC.getContext('2d');
+const scratch = document.createElement('canvas'); scratch.width = W; scratch.height = H; const sctx = scratch.getContext('2d');
+const B1 = document.createElement('canvas'); B1.width = 270; B1.height = 480; const b1 = B1.getContext('2d');
+const B2 = document.createElement('canvas'); B2.width = 90; B2.height = 160; const b2 = B2.getContext('2d');
+const FS = `precision highp float;
+uniform sampler2D uImg, uB1, uB2; uniform vec2 uRes, uC; uniform float uRad, uCA, uDist, uFlash, uSeed; uniform vec3 uFlashCol;
+void main() {
+  vec2 uv = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);
+  vec2 d = uv - uC; vec2 da = d * vec2(1.0, 1.78);
+  vec2 duv = uC + d * (1.0 + uDist * dot(da, da));
+  vec3 col;
+  vec2 off = (duv - uC) * (uCA * 0.018 + 0.0015);
+  if (uRad > 0.002) {
+    vec3 acc = vec3(0.0); float tot = 0.0;
+    for (int i = 0; i < 14; i++) { float k = float(i) / 13.0, w = 1.0 - k * 0.6; vec2 p = uC + (duv - uC) * (1.0 - uRad * k * 0.16);
+      acc += vec3(texture2D(uImg, p + off).r, texture2D(uImg, p).g, texture2D(uImg, p - off).b) * w; tot += w; }
+    col = acc / tot;
+  } else col = vec3(texture2D(uImg, duv + off).r, texture2D(uImg, duv).g, texture2D(uImg, duv - off).b);
+  vec3 b = texture2D(uB1, duv).rgb * 0.6 + texture2D(uB2, duv).rgb * 0.8;
+  col += b * b * 0.42 + b * 0.10;
+  col += uFlashCol * uFlash;
+  col = max(col - 0.012, 0.0) * 1.03;
+  col = (col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14);                // filmic (ACES) curve
+  float l = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(col, col * vec3(0.9, 1.0, 1.08), (1.0 - l) * 0.4);                          // cool shadows
+  col = mix(col, col * vec3(1.06, 1.0, 0.93), l * 0.3);                                  // warm highlights
+  vec2 vd = (uv - vec2(0.5, 0.44)) * vec2(1.0, 1.15); col *= 1.0 - smoothstep(0.32, 0.95, length(vd)) * 0.7;
+  float n = fract(sin(dot(gl_FragCoord.xy + uSeed, vec2(12.9898, 78.233))) * 43758.5453);
+  col += (n - 0.5) * 0.05;
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+function mk(type, src) { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; }
+const prog = gl.createProgram();
+gl.attachShader(prog, mk(gl.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'));
+gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+const al = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+const U = n => gl.getUniformLocation(prog, n);
+const TEX = [0, 1, 2].map(i => { const tx = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, tx);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v); return tx; });
+gl.uniform1i(U('uImg'), 0); gl.uniform1i(U('uB1'), 1); gl.uniform1i(U('uB2'), 2);
+gl.uniform2f(U('uRes'), W, H); gl.uniform2f(U('uC'), CX / W, CY / H);
+const SCENE_STARTS = SCENES.map(s => s[0]).filter(x => x > 0);
+function fx(t) {
+  let rad = 0, ca = 0.06, dist = 0, flash = 0, fc = [1, 0.85, 0.6];
+  for (const s0 of SCENE_STARTS) {   // zoom-through on every scene change
+    const pre = P(t, s0 - 0.14, s0), post = Math.exp(-Math.max(0, t - s0) * 9);
+    if (t > s0 - 0.14 && t < s0 + 0.5) rad = Math.max(rad, t < s0 ? E.inCubic(pre) : post);
+  }
+  for (const d0 of DROPS) {
+    const q = t - d0; if (q < 0 || q > 1) continue;
+    const k = Math.exp(-q * 6);
+    ca = Math.max(ca, 1.2 * k); dist = Math.max(dist, 0.22 * Math.exp(-q * 8)); rad = Math.max(rad, 0.9 * Math.exp(-q * 9));
+    const fl = 0.2 * Math.exp(-q * 16); if (fl > flash) { flash = fl; fc = sceneAccent(t + 0.01) === C.emer ? [0.4, 1, 0.7] : [1, 0.75, 0.3]; }
+  }
+  for (const s0 of SCENE_STARTS) { const q = t - s0; if (q >= 0 && q < 0.3) { const fl = 0.12 * Math.sin(Math.PI * q / 0.3); if (fl > flash) { flash = fl; fc = [1, 0.8, 0.55]; } } }   // light leak
+  return { rad, ca, dist, flash, fc };
+}
+function post(t, frame) {
+  b1.filter = 'brightness(0.78) contrast(3.4) blur(6px)'; b1.clearRect(0, 0, 270, 480); b1.drawImage(ACC, 0, 0, 270, 480);
+  b2.filter = 'blur(5px)'; b2.clearRect(0, 0, 90, 160); b2.drawImage(B1, 0, 0, 90, 160);
+  [ACC, B1, B2].forEach((src, i) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, TEX[i]); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); });
+  const f = fx(t);
+  gl.uniform1f(U('uRad'), f.rad); gl.uniform1f(U('uCA'), f.ca); gl.uniform1f(U('uDist'), f.dist); gl.uniform1f(U('uFlash'), f.flash);
+  gl.uniform3f(U('uFlashCol'), ...f.fc); gl.uniform1f(U('uSeed'), (frame * 7.13) % 1000);
+  gl.viewport(0, 0, W, H); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 window.drawFrame = function (frame, S = 2) {
   const t = frame / FPS;
   for (let i = 0; i < S; i++) {
     const ts = clamp(t + ((i + 0.5) / S - 0.5) * 0.5 / FPS, 0, DUR - 1e-4);
     renderScene(sctx, ts);
-    mctx.globalAlpha = 1 / (i + 1); mctx.drawImage(scratch, 0, 0);
+    acc.globalAlpha = 1 / (i + 1); acc.drawImage(scratch, 0, 0);
   }
-  mctx.globalAlpha = 1; grain(frame);
+  acc.globalAlpha = 1;
+  post(t, frame);
 };
-window.renderFrame = f => { window.drawFrame(f); return main.toDataURL('image/jpeg', 0.93); };
+window.renderFrame = f => { window.drawFrame(f); return GLC.toDataURL('image/jpeg', 0.93); };
 window.ready = Promise.all([document.fonts.load(`900 100px ${DISP}`), document.fonts.load(`700 24px ${MONO}`)]);
