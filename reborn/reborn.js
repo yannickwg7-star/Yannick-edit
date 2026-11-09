@@ -172,17 +172,15 @@ function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >
 function shade(ctx, x0, y0, x1, y1, c0, c1) { const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, c0); g.addColorStop(1, c1); return g; }
 
 // ───────── shared pieces ─────────
-function tag(ctx, text, x, y, d, col = C.amber, size = 30) {
-  size = Math.max(size, 28);     // mono label that springs in (bad-grades nod)
+function tag(ctx, text, x, y, d, col = C.amber, size = 30) {     // frosted-glass chip that springs in
+  size = Math.max(size, 28);
   if (d < 0) return;
   const s = spring(d, 3.6, 0.45);
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
   ctx.font = `700 ${size}px ${MONO}`;
-  const w = ctx.measureText(text).width + size * 1.3, h = size * 1.75;
-  ctx.shadowColor = col; ctx.shadowBlur = 22;
-  ctx.fillStyle = hexA(col, 0.14); ctx.strokeStyle = col; ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 8); ctx.fill(); ctx.stroke();
-  ctx.shadowBlur = 0; ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 0, 1);
+  const w = ctx.measureText(text).width + size * 1.5, h = size * 1.9;
+  glassRect(ctx, -w / 2, -h / 2, w, h, h * 0.32, BB, col, 0.6, 24);
+  ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 14; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 0, 2);
   ctx.restore();
 }
 function ring(ctx, t, r, col, a = 1, w = 6) {      // the focus ring: the anchor that never leaves
@@ -630,7 +628,8 @@ function typography(ctx, t) {
       ctx.save();
       ctx.beginPath(); ctx.rect(cx - art.w * pop, y - sizes[i] * 0.78 * pop, art.w * pop * 2, sizes[i] * 1.6 * pop); ctx.clip();
       ctx.globalAlpha = (1 - out) * (isActive || w.accent ? 1 : 0.5);
-      if (isActive || (w.accent && d < 1.5)) { ctx.shadowColor = w.accent ? hexA(col, 0.75) : 'rgba(244,244,246,0.45)'; ctx.shadowBlur = w.accent ? 26 : 14; }
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 4;
+      if (isActive || (w.accent && d < 1.5)) { ctx.shadowColor = w.accent ? hexA(col, 0.75) : 'rgba(244,244,246,0.45)'; ctx.shadowBlur = w.accent ? 26 : 14; ctx.shadowOffsetY = 0; }
       const yy = y + (1 - rise) * sizes[i] * 0.95;
       ctx.drawImage(art.c, cx - art.w * pop / 2, yy - art.h * pop / 2, art.w * pop, art.h * pop);
       ctx.restore();
@@ -651,12 +650,122 @@ function typography(ctx, t) {
 // ───────── composition ─────────
 const SCENES = [[0, 3.6, sceneMemory], [3.6, 5.3, sceneWin], [5.3, 9.4, sceneReborn], [9.4, 14.75, sceneDoor], [14.75, 19.45, sceneMirror],
   [19.45, 22.35, sceneBlueprint], [22.35, 25.85, sceneFix], [25.85, 30.7, sceneLight], [30.7, 35.5, sceneDevour], [35.5, 40.7, sceneDestroy], [40.7, 45.71, sceneAgain]];
+
+// ───────── glassmorphism engine ─────────
+// Backdrops are blurred copies of what is behind the glass (half-res canvas, ~24px blur at full res).
+const BB = document.createElement('canvas'); BB.width = W / 2; BB.height = H / 2; const bbx = BB.getContext('2d');   // background only
+const BA = document.createElement('canvas'); BA.width = W / 2; BA.height = H / 2; const bax = BA.getContext('2d');   // everything behind the text
+function blurInto(dctx, src, px = 12) { dctx.save(); dctx.filter = `blur(${px}px) saturate(1.25) brightness(0.92)`; dctx.clearRect(0, 0, W / 2, H / 2); dctx.drawImage(src, 0, 0, W / 2, H / 2); dctx.restore(); }
+const FROST = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), id = g.createImageData(128, 128), r = rng(31); for (let i = 0; i < id.data.length; i += 4) { const v = 128 + (r() - 0.5) * 120; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } g.putImageData(id, 0, 0); return c; })();
+// glassRect: shadow → refracted frosted backdrop → white fill + accent tint → top sheen → frost grain → gradient rim
+function glassRect(ctx, x, y, w, h, r, backdrop, tint = null, tintA = 0.5, shadow = 40, refract = 1.04, sweepP = -1, sweepA = 0) {
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = shadow; ctx.shadowOffsetY = shadow * 0.45;
+  ctx.fillStyle = 'rgba(6,8,12,0.8)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
+  ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.clip();
+  // refraction: the frosted backdrop is magnified slightly about the card centre (in screen space)
+  const m = ctx.getTransform(), cx = m.a * (x + w / 2) + m.c * (y + h / 2) + m.e, cy = m.b * (x + w / 2) + m.d * (y + h / 2) + m.f;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(backdrop, 0, 0, W / 2, H / 2, cx - cx * refract, cy - cy * refract, W * refract, H * refract);
+  ctx.setTransform(m);
+  ctx.fillStyle = 'rgba(255,255,255,0.045)'; ctx.fillRect(x, y, w, h);
+  if (tint) { ctx.fillStyle = hexA(tint, 0.035 * tintA); ctx.fillRect(x, y, w, h); }
+  const sh = ctx.createLinearGradient(0, y, 0, y + h * 0.45); sh.addColorStop(0, 'rgba(255,255,255,0.065)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sh; ctx.fillRect(x, y, w, h * 0.45);
+  ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.045; ctx.fillStyle = ctx.createPattern(FROST, 'repeat'); ctx.fillRect(x, y, w, h);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  if (sweepP >= 0 && sweepP <= 1 && sweepA > 0) {     // specular sweep on impacts
+    const bx = lerp(x - w * 0.6, x + w * 1.6, E.inOutSine(sweepP));
+    const g = ctx.createLinearGradient(bx - 160, y, bx + 160, y + h * 0.4);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, `rgba(255,255,255,${sweepA})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(x, y, w, h); ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.restore();
+  // ultra-thin rim: bright top-left fading to faint bottom-right
+  const rg = ctx.createLinearGradient(x, y, x + w, y + h);
+  rg.addColorStop(0, tint ? hexA(tint, 0.55 * tintA + 0.12) : 'rgba(255,255,255,0.32)'); rg.addColorStop(0.45, 'rgba(255,255,255,0.12)'); rg.addColorStop(1, 'rgba(255,255,255,0.05)');
+  ctx.save(); ctx.strokeStyle = rg; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x + 1, y + 1, w - 2, h - 2, r); ctx.stroke(); ctx.restore();
+}
+function impactSweep(t, list, dur, amp) { for (const d of list) { const q = t - d; if (q >= 0 && q < dur) return [q / dur, amp]; } return [-1, 0]; }
+const SCENE_NAMES = ['MEMORY', 'THE WIN', 'REBIRTH', 'THE DOOR', 'THE MIRROR', 'THE PLAN', 'THE FIX', 'THE LIGHT', 'DEVOUR', 'THE COST', 'AGAIN'];
+// focal card: floats behind the objects, pops with spring physics on every scene, tilts on interrupts
+function focalCard(ctx, t) {
+  const si = Math.max(0, SCENES.findIndex(s => t >= s[0] && t < s[1])), s0 = SCENES[si][0];
+  const pop = spring(t - s0, 2.2, 0.5), intro = spring(t - 0.05, 1.8, 0.6);
+  const w = 820, h = 900, x = CX - w / 2, y = CY - h / 2 + 30;
+  const tilt = interrupt(t, 'tilt') * (Math.round(t) % 2 ? 1 : -1);
+  ctx.save();
+  ctx.translate(CX, CY + 30 + (1 - pop) * 36 + Math.sin(t * 0.8) * 6);
+  ctx.transform(1 - 0.035 * Math.abs(tilt), 0.03 * tilt, 0, 1, 0, 0);
+  const sc = lerp(0.93, 1, pop) * intro; ctx.scale(sc, sc);
+  ctx.translate(-CX, -(CY + 30));
+  const [sp, sa] = (() => { const a = impactSweep(t, DROPS, 0.8, 0.22); return a[0] >= 0 ? a : impactSweep(t, SCENES.map(s => s[0]).filter(v => v > 0), 0.6, 0.1); })();
+  glassRect(ctx, x, y, w, h, 64, BB, sceneAccent(t), 1, 50, 1.06, sp, sa);
+  ctx.restore();
+}
+// text card: morphs (spring) to fit each phrase
+function phraseBox(pi) {
+  const ws = WORDS.filter(w => w.pi === pi); if (!ws.length) return [600, 160];
+  const nLines = Math.max(...ws.map(w => w.li)) + 1, size = ws.length <= 4 ? 132 : ws.length <= 6 ? 112 : 92, lh = size * 1.08;
+  let maxW = 0;
+  for (let li = 0; li < nLines; li++) {
+    const lw = ws.filter(w => w.li === li); let tot = size * 0.26 * (lw.length - 1);
+    for (const w of lw) { sctxMeasure.font = `900 ${Math.round(w.accent ? size * 1.14 : size)}px ${DISP}`; tot += sctxMeasure.measureText(w.word).width; }
+    maxW = Math.max(maxW, Math.min(960, tot));
+  }
+  return [Math.min(1010, maxW + 110), nLines * lh + 84];
+}
+const sctxMeasure = document.createElement('canvas').getContext('2d');
+const PBOX = PHRASES.map((_, i) => null);
+function textCard(ctx, t) {
+  const pi = phraseAt(t); if (pi < 0) return;
+  PBOX[pi] = PBOX[pi] || phraseBox(pi); if (pi > 0) PBOX[pi - 1] = PBOX[pi - 1] || phraseBox(pi - 1);
+  const t0 = PHRASES[pi][0], k = spring(t - t0, 2.6, 0.55), prev = pi > 0 ? PBOX[pi - 1] : [200, 120];
+  const w = lerp(prev[0], PBOX[pi][0], k), h = lerp(prev[1], PBOX[pi][1], k), intro = spring(t - 0.05, 2.2, 0.55);
+  const fadeEnd = 1 - P(t, DUR - 0.5, DUR - 0.2);
+  if (intro <= 0.01 || fadeEnd <= 0) return;
+  ctx.save(); ctx.globalAlpha = fadeEnd;
+  ctx.translate(CX, TY); ctx.scale(intro, intro); ctx.translate(-CX, -TY);
+  const [sp, sa] = (() => { const a = impactSweep(t, DROPS, 0.8, 0.25); return a[0] >= 0 ? a : impactSweep(t, PHRASES.map(p => p[0]), 0.55, 0.07); })();
+  glassRect(ctx, CX - w / 2, TY - h / 2, w, h, 44, BA, sceneAccent(t), 0.8, 40, 1.05, sp, sa);
+  ctx.restore();
+}
+// chapter pill at the top
+function chapterPill(ctx, t) {
+  const si = Math.max(0, SCENES.findIndex(s => t >= s[0] && t < s[1])), s0 = SCENES[si][0];
+  const label = `${String(si + 1).padStart(2, '0')} / 11 · ${SCENE_NAMES[si]}`;
+  ctx.save(); ctx.font = `700 26px ${MONO}`; ctx.letterSpacing = '4px';
+  const tw = ctx.measureText(label).width, k = spring(t - s0, 3, 0.5), intro = spring(t - 0.3, 2.4, 0.6);
+  const w = tw + 70, h = 64, y = 150;
+  ctx.globalAlpha = intro * (1 - P(t, DUR - 0.5, DUR - 0.2));
+  ctx.translate(CX, y); ctx.scale(lerp(0.9, 1, k), lerp(0.9, 1, k)); ctx.translate(-CX, -y);
+  glassRect(ctx, CX - w / 2, y - h / 2, w, h, 32, BA, sceneAccent(t), 0.7, 24, 1.03);
+  ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha *= clamp((t - s0) / 0.25);
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+  ctx.fillText(label, CX, y + 2);
+  ctx.restore();
+}
+// foreground motes: in front of the glass, crisp — gives a third depth layer
+const FG = (() => { const r = rng(77); return Array.from({ length: 16 }, () => ({ x: r() * W, y: r() * H, s: 3 + r() * 6, v: 20 + r() * 40, p: r() * 6 })); })();
+function foreground(ctx, t, cam) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const m of FG) {
+    const x = ((m.x + cam.sx * 3 + Math.sin(t * 0.5 + m.p) * 40) % W + W) % W, y = ((m.y - t * m.v) % H + H) % H;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, m.s * 3); g.addColorStop(0, hexA(sceneAccent(t), 0.35)); g.addColorStop(1, hexA(sceneAccent(t), 0));
+    ctx.fillStyle = g; ctx.fillRect(x - m.s * 3, y - m.s * 3, m.s * 6, m.s * 6);
+  }
+  ctx.restore();
+}
+
 const OL = document.createElement('canvas'); OL.width = W; OL.height = H; const ol = OL.getContext('2d');
 const RL = document.createElement('canvas'); RL.width = W; RL.height = H; const rl = RL.getContext('2d');
 function renderScene(ctx, t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0;
   const cam = camera(t);
   background(ctx, t, cam);
+  blurInto(bbx, ctx.canvas, 12);
+  focalCard(ctx, t);
   ol.setTransform(1, 0, 0, 1, 0, 0); ol.globalAlpha = 1; ol.globalCompositeOperation = 'source-over'; ol.shadowBlur = 0; ol.clearRect(0, 0, W, H);
   ol.save();
   ol.translate(CX + cam.sx, CY + cam.sy); ol.rotate(cam.rot); ol.scale(cam.z, cam.z); ol.translate(-CX, -CY);
@@ -676,7 +785,11 @@ function renderScene(ctx, t) {
   rl.globalCompositeOperation = 'destination-out'; rl.fillStyle = '#000'; rl.fillRect(0, 0, W, floor);
   ctx.drawImage(RL, 0, 0);
   ctx.drawImage(OL, 0, 0);
+  blurInto(bax, ctx.canvas, 13);
+  textCard(ctx, t);
+  chapterPill(ctx, t);
   ctx.save(); ctx.translate(cam.sx * 0.5, cam.sy * 0.5); typography(ctx, t); ctx.restore();
+  foreground(ctx, t, cam);
 }
 
 // ───────── post: bloom, zoom-through blur, chromatic aberration, lens warp, grade, grain (WebGL) ─────────
