@@ -156,7 +156,7 @@ def hum(d, f0, f1):
 
 
 
-T_REBORN, T_BECOME, T_DESTROY, T_AGAIN, T_LIGHT2 = 7.595, 29.355, 38.214, 41.85, 34.4
+T_REBORN, T_BECOME, T_DESTROY, T_AGAIN, T_LIGHT2 = 7.595, 29.26, 38.31, 41.85, 34.57
 tone = lowpass(noise(45.7), 260) * 0.35 + lowpass(noise(45.7), 3000) * 0.03          # room tone / film gate
 place(tone, 0.0, 0.25, 0, 0.0)
 for hb in (5.6, 6.3, 6.9):                                                                  # heartbeat before reborn
