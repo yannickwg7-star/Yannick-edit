@@ -1,0 +1,9 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>REBORN mix</title>
+<style>
+@font-face { font-family: "Instr"; font-style: italic; font-weight: 400; src: url("fonts/InstrumentSerif-Italic.woff2") format("woff2"); }
+html,body{margin:0;background:#000}canvas{display:block;height:100vh;margin:auto}
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas><script src="mix.js"></script>
+<script>if (!location.search.includes('render')) window.ready.then(() => { const s = performance.now(); const loop = () => { window.drawFrame(Math.floor(((performance.now() - s) / 1000 % 45.7) * 60), 1); requestAnimationFrame(loop); }; loop(); });</script>
+</body></html>
