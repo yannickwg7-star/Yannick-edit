@@ -100,7 +100,7 @@ const POSE = {
 const mix = (a, b, k) => { const o = {}; for (const n in a) o[n] = lerp(a[n], b[n], k); return o; };
 function walk(base, ph, amt = 1) { const o = { ...base }, s = Math.sin(ph) * amt; o.hpL += 0.45 * s; o.hpR -= 0.45 * s; o.knL += 0.5 * Math.max(0, -Math.sin(ph)) * amt; o.knR += 0.5 * Math.max(0, Math.sin(ph)) * amt; o.shLx -= 0.35 * s; o.shRx += 0.35 * s; o.y += 0.025 * Math.abs(Math.cos(ph)) * amt; return o; }
 function pose(f, p) { f.hips.position.y = 0.92 + p.y; f.torso.rotation.x = p.sp; f.neck.rotation.x = p.hd; f.shL.rotation.set(p.shLx, 0, p.shLz); f.elL.rotation.x = p.elL; f.shR.rotation.set(p.shRx, 0, p.shRz); f.elR.rotation.x = p.elR; f.hipL.rotation.x = p.hpL; f.knL.rotation.x = p.knL; f.hipR.rotation.x = p.hpR; f.knR.rotation.x = p.knR; }
-const hero = makeFigure(M.white); add(hero.root);
+const hero = makeFigure(M.white); add(hero.root); hero.root.visible = false;
 // ── the 2D character: the rig is flattened onto a camera-facing card and drawn as a flat figure ──
 const PW = 1.5, PH = 3.0, PXM = 512 / PW;                 // card size (m) and pixels per metre
 const figTex = canvasTex(512, 1024, () => {});
