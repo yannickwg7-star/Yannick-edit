@@ -163,10 +163,17 @@ PH = [(0.05, 1.9, "THAT VERSION|OF MYSELF|IS A MEMORY."), (2.0, 3.4, "I DON'T|NE
       (28.45, 30.5, "THEN I NEED TO|BECOME|THE LIGHT."), (31.3, 33.3, "WATCH ME,|I'LL DEVOUR IT"), (33.4, 35.2, "AND TURN IT|INTO LIGHT."), (35.9, 37.4, "IF IT MEANS|WINNING"), (37.5, 40.4, "I DON'T MIND|DESTROYING|MY OWN SELF."),
       (41.3, 43.5, "I'LL BE|REBORN AGAIN"), (43.6, 45.7, "AS MANY TIMES|AS IT TAKES")]
 syl = lambda w: max(1, len(re.findall(r'[aeiouy]+', re.sub(r'[^a-z]', '', w.lower()))))
-for i, (t0, t1, txt) in enumerate(PH):                    # a soft tick on every line reveal
-    lines = txt.split('|'); wts = [sum(syl(w) for w in l.split()) for l in lines]; tot = sum(wts); acc = 0
-    for j, l in enumerate(lines):
-        place(blip(1500 + (j % 3) * 260, 0.05, 80), t0 + (t1 - t0) * 0.85 * acc / tot, 0.08, (j % 2 - 0.5) * 0.4, 0.3); acc += wts[j]
+WIN = [(0.05, 1.9), (2.1, 3.5), (3.8, 5.2), (5.5, 6.9), (7.1, 8.2), (9.4, 12.2), (12.4, 14.5), (15.5, 16.9), (17.4, 18.6), (19.7, 22.0),
+       (22.5, 23.6), (23.8, 24.9), (25.9, 28.3), (28.5, 30.4), (31.5, 33.2), (33.4, 34.7), (35.8, 37.2), (37.5, 39.9), (41.6, 43.2), (43.6, 45.4)]
+EXACT = {7: [15.5, 15.8, 16.4], 8: [17.4, 17.9], 11: [23.8, 24.1], 14: [31.5, 32.0], 15: [33.4, 34.4], 16: [35.8, 36.2], 18: [41.6, 41.85]}
+for i, (_, _, txt) in enumerate(PH):
+    lines = txt.split('|')
+    if i in EXACT: times = EXACT[i]
+    else:
+        t0, t1 = WIN[i]; wts = [sum(syl(w) for w in l.split()) for l in lines]; tot = sum(wts); acc = 0; times = []
+        for wv in wts: times.append(t0 + (t1 - t0) * 0.9 * acc / tot); acc += wv
+    for j, tt in enumerate(times):
+        place(blip(1500 + (j % 3) * 260, 0.05, 80), tt, 0.08, (j % 2 - 0.5) * 0.4, 0.3)
 SC = [2.0, 3.7, 5.35, 6.95, 9.4, 15.3, 17.4, 19.5, 25.85, 30.7, 33.4, 35.9, 37.5, 41.3]
 for s0 in SC:
     place(whoosh(0.4, 400, 11000), s0 - 0.36, 0.4, 0.3 if int(s0) % 2 else -0.3, 0.3)
@@ -182,7 +189,7 @@ tt, gap = 5.4, 0.12
 while tt < 6.9: place(tick(), tt, 0.14, 0.2); tt += gap; gap = max(0.03, gap * 0.93)                 # timecode
 for k in [9.9, 10.3, 10.7, 11.25, 11.65, 12.05]: place(knock(), k, 0.7, -0.2, 0.4); place(kick(0.3, 160, 60), k, 0.35)
 place(impact(0.6, 70), 13.1, 0.35)                          # strike-through
-place(pluck(784, 0.8), 15.9, 0.2, 0, 0.6)                   # the one
+place(pluck(784, 0.8), 16.45, 0.2, 0, 0.6)                  # the one
 for k in range(4): place(stab([261.6 * 2 ** (k / 4), 329.6 * 2 ** (k / 4), 392 * 2 ** (k / 4)], 0.25), 17.4 + k * 0.736, 0.25, 0, 0.3)
 gl = tvec(1.3); place(np.sin(2 * np.pi * np.cumsum(300 + 400 * np.sin(gl * 9) * np.exp(-gl)) / SR) * 0.3, 20.6, 0.2, 0.3, 0.4)   # elastic chaos
 for k in range(8): place(tick(), 22.5 + k * 0.16, 0.08, -0.3)                                       # dragging handles
@@ -194,7 +201,7 @@ place(whoosh(1.1, 9000, 150), 32.3, 0.4)
 for k in range(6): place(kick(0.35, 200, 50), 33.4 + k * 0.368, 0.8); place(hat(0.12, True), 33.4 + k * 0.368, 0.2, 0.3)
 for k in range(10): place(hat(0.03), 37.6 + k * 0.05, 0.12, (k % 2 - 0.5) * 0.8)                   # glitch
 place(glass(1.0), 37.5, 0.35, 0, 0.5)
-for tt, g in ((42.13, 0.5), (42.26, 0.25), (42.32, 0.12)): place(pluck(880 * 2, 0.5), tt, g, 0.1, 0.6); place(kick(0.2, 300, 120), tt, g * 0.6)   # dot bounce
+for tt, g in ((42.35, 0.5), (42.48, 0.25), (42.54, 0.12)): place(pluck(880 * 2, 0.5), tt, g, 0.1, 0.6); place(kick(0.2, 300, 120), tt, g * 0.6)   # dot bounce
 for c0 in (43.6, 44.4, 45.05): place(stab([523.3, 659.3, 784], 0.25), c0, 0.3, 0, 0.4)
 place(sub(36, 0.6, 4), 45.3, 0.5)
 d, w = dry, wet

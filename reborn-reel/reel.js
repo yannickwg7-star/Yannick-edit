@@ -34,10 +34,15 @@ const PHRASES = [
   [37.50, 40.40, "I DON'T MIND|DESTROYING|MY OWN SELF."], [41.30, 43.50, "I'LL BE|REBORN AGAIN"], [43.60, 45.70, "AS MANY TIMES|AS IT TAKES"],
 ];
 const syl = w => Math.max(1, (w.toLowerCase().replace(/[^a-z]/g, '').match(/[aeiouy]+/g) || []).length);
-// LT[pi][li] = time each line starts being spoken
-const LT = PHRASES.map(([t0, t1, txt]) => {
-  const lines = txt.split('|'), wts = lines.map(l => l.split(' ').reduce((a, w) => a + syl(w), 0)), tot = wts.reduce((a, b) => a + b, 0);
-  let acc = 0; return lines.map((l, i) => { const v = t0 + (t1 - t0) * 0.85 * acc / tot; acc += wts[i]; return v; });
+// speech windows measured from the subtitle track at 10 fps
+const WIN = [[0.05, 1.9], [2.1, 3.5], [3.8, 5.2], [5.5, 6.9], [7.1, 8.2], [9.4, 12.2], [12.4, 14.5], [15.5, 16.9], [17.4, 18.6], [19.7, 22.0],
+  [22.5, 23.6], [23.8, 24.9], [25.9, 28.3], [28.5, 30.4], [31.5, 33.2], [33.4, 34.7], [35.8, 37.2], [37.5, 39.9], [41.6, 43.2], [43.6, 45.4]];
+// lines whose captions type on word by word: exact start of each line
+const EXACT = { 7: [15.5, 15.8, 16.4], 8: [17.4, 17.9], 11: [23.8, 24.1], 14: [31.5, 32.0], 15: [33.4, 34.4], 16: [35.8, 36.2], 18: [41.6, 41.85] };
+const LT = PHRASES.map(([, , txt], pi) => {
+  if (EXACT[pi]) return EXACT[pi];
+  const [t0, t1] = WIN[pi], lines = txt.split('|'), wts = lines.map(l => l.split(' ').reduce((a, w) => a + syl(w), 0)), tot = wts.reduce((a, b) => a + b, 0);
+  let acc = 0; return lines.map((l, i) => { const v = t0 + (t1 - t0) * 0.9 * acc / tot; acc += wts[i]; return v; });
 });
 const L = (pi, li) => LT[pi][li];
 const LN = pi => PHRASES[pi][2].split('|');
@@ -232,16 +237,16 @@ function sDoor(ctx, t) {
   if (t < 12.45) stack(ctx, t, 5, W / 2, 1300, 92, 105, (li, s) => li === 1 ? C.coral : C.paper, 'center');
   else {
     stack(ctx, t, 6, W / 2, 1280, 150, 160, li => li === 1 ? C.coral : C.paper, 'center');
-    const x = E.outCubic(P(t, 13.1, 13.45)); if (x > 0) { ctx.strokeStyle = C.coral; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(470, 1395); ctx.lineTo(470 + 460 * x, 1395 - 50 * x); ctx.stroke(); }
-    mono(ctx, 'STATUS: LOCKED', W - 90, 1120, t, 12.8, 0.3, C.coral, 28, 'right');
+    const x = E.outCubic(P(t, L(6, 1) + 0.2, L(6, 1) + 0.5)); if (x > 0) { ctx.strokeStyle = C.coral; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(470, 1395); ctx.lineTo(470 + 460 * x, 1395 - 50 * x); ctx.stroke(); }
+    mono(ctx, 'STATUS: LOCKED', W - 90, 1120, t, L(6, 1) + 0.2, 0.3, C.coral, 28, 'right');
   }
 }
 // 7 · 15.4–17.4 · the one: everything fades except one lime cell
 function sOne(ctx, t) {
   bg(ctx, C.bg);
-  const keep = E.inOutCubic(P(t, 15.3, 16.0)), grow = 1 + 1.8 * E.outBack(P(t, 16.4, 16.9));
+  const keep = E.inOutCubic(P(t, L(7, 2) - 0.35, L(7, 2) + 0.1)), grow = 1 + 1.8 * E.outBack(P(t, L(7, 2) + 0.05, L(7, 2) + 0.5));
   const [ox, oy] = grid(ctx, Math.max(t, 12.0), { greys: 1, keepOne: keep, oneScale: grow });
-  if (keep > 0.5) { ctx.strokeStyle = hexA(C.lime, 0.6); ctx.lineWidth = 3; const r = 140 + 40 * Math.sin(t * 4); ctx.beginPath(); ctx.arc(ox, oy, r, 0, TAU); ctx.stroke(); mono(ctx, 'fig.07 — you', ox + 170, oy + 10, t, 15.9, 0.3, C.lime, 26); }
+  if (keep > 0.5) { ctx.strokeStyle = hexA(C.lime, 0.6); ctx.lineWidth = 3; const r = 140 + 40 * Math.sin(t * 4); ctx.beginPath(); ctx.arc(ox, oy, r, 0, TAU); ctx.stroke(); mono(ctx, 'fig.07 — you', ox + 170, oy + 10, t, L(7, 2) + 0.1, 0.3, C.lime, 26); }
   stack(ctx, t, 7, W / 2, 1280, 130, 140, li => li === 2 ? C.lime : C.paper, 'center');
 }
 // 8 · 17.4–19.5 · change yourself: the cell morphs shape on every beat, colour flips
@@ -350,12 +355,12 @@ function sDevour(ctx, t) {
 function sStamps(ctx, t) {
   const k = Math.min(5, Math.floor((t - 33.4) / BEAT)), d = t - (33.4 + k * BEAT);
   const pop = E.outExpo(clamp(d / 0.2)), sc = lerp(1.3, 1, pop);
-  if (k === 0) { bg(ctx, C.coral); ctx.save(); ctx.translate(W / 2, 760); ctx.scale(sc, sc); font(ctx, 900, 420); ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText('LIGHT', 0, 150); ctx.restore(); }
-  else if (k === 1) { bg(ctx, C.lime); ctx.save(); ctx.translate(W / 2, 760); ctx.rotate(-0.1); font(ctx, 900, 300); ctx.textAlign = 'center'; for (let r = -3; r <= 3; r++) { const dx = (r % 2 ? 1 : -1) * (d * 2200 - 250); if (r === 0) { ctx.fillStyle = C.ink; ctx.fillText('LIGHT', -dx * 0.3, 100); } else { ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.strokeText('LIGHT', dx, r * 270 + 100); } } ctx.restore(); }
+  if (k === 0) { bg(ctx, C.coral); ctx.save(); ctx.translate(W / 2, 760); ctx.scale(sc, sc); font(ctx, 900, 420); ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText('TURN', 0, 150); ctx.restore(); }
+  else if (k === 1) { bg(ctx, C.lime); ctx.save(); ctx.translate(W / 2, 760); ctx.rotate(-0.1); font(ctx, 900, 300); ctx.textAlign = 'center'; for (let r = -3; r <= 3; r++) { const dx = (r % 2 ? 1 : -1) * (d * 2200 - 250); if (r === 0) { ctx.fillStyle = C.ink; ctx.fillText('TURN IT', -dx * 0.3, 100); } else { ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.strokeText('TURN IT', dx, r * 270 + 100); } } ctx.restore(); }
   else if (k === 2) { bg(ctx, C.bg); const sh = [[300, 420, C.coral, 'c'], [780, 420, C.cobalt, 's'], [300, 1000, C.lime, 't'], [780, 1000, C.paper, 'r']];
     ctx.strokeStyle = hexA(C.paper, 0.2); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W / 2, 140); ctx.lineTo(W / 2, 1280); ctx.moveTo(60, 710); ctx.lineTo(W - 60, 710); ctx.stroke();
     sh.forEach(([x, y, col, kind], i) => { const p = E.outBack(P(d, i * 0.03, i * 0.03 + 0.2)); if (p <= 0) return; ctx.save(); ctx.translate(x, y); ctx.rotate((1 - p) * 1.2); ctx.scale(p, p); ctx.fillStyle = col; ctx.strokeStyle = col; ctx.beginPath(); if (kind === 'c') { ctx.arc(0, 0, 170, 0, TAU); ctx.fill(); } else if (kind === 's') { ctx.rect(-150, -150, 300, 300); ctx.fill(); } else if (kind === 't') { ctx.moveTo(0, -180); ctx.lineTo(160, 110); ctx.lineTo(-160, 110); ctx.closePath(); ctx.fill(); } else { ctx.lineWidth = 34; ctx.arc(0, 0, 150, 0, TAU); ctx.stroke(); } ctx.restore(); }); }
-  else if (k === 3) { bg(ctx, C.paper); ctx.save(); ctx.translate(W / 2, 800); ctx.scale(sc, sc); font(ctx, 900, 1250); ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText('L', 0, 440); ctx.restore(); ctx.fillStyle = C.coral; ctx.beginPath(); ctx.arc(W / 2 + 260, 420, 80 * E.outBack(P(d, 0.05, 0.25)), 0, TAU); ctx.fill(); }
+  else if (k === 3) { bg(ctx, C.paper); ctx.save(); ctx.translate(W / 2, 800); ctx.scale(sc, sc); font(ctx, 900, 1250); ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText('L', 0, 440); ctx.restore(); ctx.fillStyle = C.lime; ctx.beginPath(); ctx.arc(W / 2 + 260, 420, 80 * E.outBack(P(d, 0.05, 0.25)), 0, TAU); ctx.fill(); }
   else { bg(ctx, C.bg); cloud(ctx, t, W / 2, 700, { form: 1, explode: E.outExpo(P(t, 34.9, 35.9)) * 0.6, glow: 0.6, colA: [235, 255, 150], colB: [255, 74, 28] }); }
   const ink = k === 2 || k >= 4 ? C.paper : C.ink;
   ctx.fillStyle = k >= 4 ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0)';
@@ -368,7 +373,7 @@ function sWinning(ctx, t) {
   const p = E.outExpo(P(t, 36.0, 36.6));
   ctx.strokeStyle = C.coral; ctx.lineWidth = lerp(60, 6, p); ctx.beginPath(); ctx.arc(W / 2, 700, lerp(0, 380, p), 0, TAU); ctx.stroke();
   for (const [x, y, sx, sy] of [[180, 340, 1, 1], [900, 340, -1, 1], [180, 1060, 1, -1], [900, 1060, -1, -1]]) { const k = E.outExpo(P(t, 36.1, 36.6)); ctx.strokeStyle = C.paper; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y + sy * 60 * k); ctx.lineTo(x, y); ctx.lineTo(x + sx * 60 * k, y); ctx.stroke(); }
-  mono(ctx, 'COST: ANY', W / 2, 712, t, 36.2, 0.3, C.coral, 34, 'center');
+  mono(ctx, 'COST: ANY', W / 2, 712, t, L(16, 1), 0.3, C.coral, 34, 'center');
   maskLine(ctx, 'IF IT MEANS', W / 2, 1280, 110, E.outExpo(P(t, L(16, 0), L(16, 0) + 0.4)), C.paper, 'center');
   riseLetters(ctx, 'WINNING', W / 2, 1500, 200, t, L(16, 1), C.coral, 0.04);
 }
@@ -391,15 +396,15 @@ function sAgain(ctx, t) {
   const size = 210, base = 860, dotR = 26, gap = 14;
   font(ctx, 900, size); const ww = ctx.measureText('REBORN').width, x0 = W / 2 - (ww + gap + dotR * 2) / 2;
   // rebirth cycles: the word re-forms faster each time
-  const cycles = [41.4, 43.6, 44.4, 45.05], ci = cycles.filter(c => t >= c).length - 1, c0 = cycles[Math.max(0, ci)];
+  const cycles = [L(18, 1), 43.6, 44.4, 45.05], ci = cycles.filter(c => t >= c).length - 1, c0 = cycles[Math.max(0, ci)];
   const L2 = layoutLetters(ctx, 'REBORN', 0, size); ctx.textAlign = 'left';
-  L2.out.forEach((g, i) => { const st = ci === 0 ? 0.05 : 0.015, p = E.outExpo(P(t, c0 + i * st, c0 + i * st + (ci === 0 ? 0.55 : 0.2))); if (p <= 0) return;
+  L2.out.forEach((g, i) => { const st = ci === 0 ? 0.08 : 0.015, p = E.outExpo(P(t, c0 + i * st, c0 + i * st + (ci === 0 ? 0.45 : 0.2))); if (p <= 0) return;
     const gx = x0 + (g.x - L2.x0); ctx.save(); ctx.beginPath(); ctx.rect(gx - 20, base - size * 0.86, g.w + 40, size * 1.02); ctx.clip(); ctx.fillStyle = C.paper; ctx.fillText(g.ch, gx, base + (1 - p) * size * 1.02); ctx.restore(); });
-  const dp = P(t, 42.0, 42.36), dx = x0 + ww + gap + dotR, restY = base - dotR;
-  if (dp > 0) { const y = lerp(-120, restY, E.outBounce(dp)), near = Math.exp(-Math.abs(y - restY) / 14), sq = near * 0.3 * (1 - P(t, 42.36, 42.5)); ctx.fillStyle = C.coral; ctx.beginPath(); ctx.ellipse(dx, y + dotR * sq * 0.5, dotR * (1 + sq), dotR * (1 - sq), 0, 0, TAU); ctx.fill(); }
-  const lp = E.outExpo(P(t, 42.1, 42.7)); ctx.fillStyle = hexA(C.paper, 0.35); ctx.fillRect(x0 - 40 - 220 * lp, base - size * 0.36, 220 * lp, 2); ctx.fillRect(x0 + ww + gap + dotR * 2 + 40, base - size * 0.36, 220 * lp, 2);
+  const dp = P(t, 42.22, 42.58), dx = x0 + ww + gap + dotR, restY = base - dotR;
+  if (dp > 0) { const y = lerp(-120, restY, E.outBounce(dp)), near = Math.exp(-Math.abs(y - restY) / 14), sq = near * 0.3 * (1 - P(t, 42.58, 42.72)); ctx.fillStyle = C.coral; ctx.beginPath(); ctx.ellipse(dx, y + dotR * sq * 0.5, dotR * (1 + sq), dotR * (1 - sq), 0, 0, TAU); ctx.fill(); }
+  const lp = E.outExpo(P(t, 42.35, 42.95)); ctx.fillStyle = hexA(C.paper, 0.35); ctx.fillRect(x0 - 40 - 220 * lp, base - size * 0.36, 220 * lp, 2); ctx.fillRect(x0 + ww + gap + dotR * 2 + 40, base - size * 0.36, 220 * lp, 2);
   maskLine(ctx, "I'LL BE", W / 2, 560, 100, E.outExpo(P(t, L(18, 0), L(18, 0) + 0.4)), C.paper, 'center');
-  maskLine(ctx, 'AGAIN', W / 2, 1060, 120, E.outExpo(P(t, L(18, 1) + 0.25, L(18, 1) + 0.65)), C.lime, 'center');
+  maskLine(ctx, 'AGAIN', W / 2, 1060, 120, E.outExpo(P(t, 42.75, 43.15)), C.lime, 'center');
   // counter
   if (t > 43.6) { const n = ci >= 3 ? '∞' : String(ci + 1); font(ctx, 900, 160); ctx.textAlign = 'center'; ctx.fillStyle = C.coral; const k = E.outBack(P(t, c0, c0 + 0.2)); ctx.save(); ctx.translate(W / 2, 1330); ctx.scale(k, k); ctx.fillText('×' + n, 0, 55); ctx.restore(); }
   mono(ctx, 'AS MANY TIMES AS IT TAKES', W / 2, 1500, t, L(19, 0), 0.9, hexA(C.paper, 0.8), 30, 'center');
