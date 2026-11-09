@@ -14,7 +14,7 @@ INTRO = [('study', 1.6, (1.0, 540, 960)), ('weak', 1.0, None), ('study', 3.0, (1
 DROP = [('white', 4.6, None), ('eye', 11.8, None), ('study', 3.6, (2.2, 570, 640)), ('aura', 2.0, None),
         ('army', 3.3, None), ('clash', 2.6, None), ('army', 9.3, None), ('ice', 1.6, None),
         ('study', 10.0, (1.5, 540, 780)), ('ice', 3.4, None), ('aura', 5.4, None), ('eye', 13.0, None),
-        ('study', 0.6, (1.0, 540, 960)), ('weak', 1.6, None), ('aura', 9.3, None), ('ice', 4.2, None),
+        ('study', 0.6, (1.0, 540, 960)), ('weak', 1.6, None), ('aura', 9.5, None), ('ice', 4.2, None),
         ('study', 14.0, (1.6, 560, 700)), ('shock', 7.9, None), ('clash', 4.6, None), ('aura', 2.2, None)]
 PUSH = [('ice', 9.2, None), ('eye', 13.4, None), ('ice', 12.2, None), ('army', 3.6, None),
         ('eye', 12.1, None), ('aura', 12.0, None), ('ice', 3.9, None), ('white', 5.4, None)]
