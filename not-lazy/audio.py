@@ -6,7 +6,7 @@ import sys, wave
 import numpy as np
 
 SR = 44100
-DUR = 17.5
+DUR = 18.0
 N = int(SR * DUR)
 rng = np.random.default_rng(3)
 dry = np.zeros((N, 2))
@@ -155,78 +155,96 @@ def growl(d):
     return s * np.minimum(1, t / d) ** 1.5
 
 
-WORDS = [0.30, 0.55, 0.85, 1.20, 3.20, 3.45, 3.80, 4.25, 5.05, 5.35, 5.65, 6.45, 6.80, 7.20, 7.45, 7.70, 9.70, 9.90, 10.10, 10.30, 10.65,
-         11.25, 11.45, 11.65, 12.10, 12.85, 13.05, 13.35, 13.55, 13.95, 14.15, 14.40, 14.62, 15.55, 15.95]
-for i, tt in enumerate(WORDS):                       # a soft tick on every word
+WORDS = [0.30, 0.55, 0.85, 1.20, 3.20, 3.45, 3.80, 4.25, 5.05, 5.35, 5.65, 6.45, 6.80, 7.20, 7.45, 7.70, 9.70, 9.90, 10.10, 10.30, 10.75,
+         11.25, 11.45, 11.65, 12.10, 12.95, 13.15, 13.40, 13.60, 13.95, 14.15, 14.40, 14.62, 15.55, 15.95]
+for i, tt in enumerate(WORDS):
     place(blip(1600 + (i % 3) * 200, 0.04, 90), tt, 0.06, (i % 2 - 0.5) * 0.4)
 
-# ── 0–3 · the desk ──
-place(pad([A2, E3, C4], 3.2, 0.6, 0.8), 0.0, 0.35, 0, 0.6)
-for tt in np.arange(0.1, 3.0, 0.5):
-    place(tick(), tt, 0.12, 0.3)                       # the alarm clock ticking
-    place(kick(0.3, 80, 40), tt, 0.25)                 # heartbeat-like pulse
-place(impact(0.9, 50), 1.20, 0.45, 0, 0.3)            # LAZY.
+# ── 0–2.95 · the lamp-lit desk ──
+hum = lowpass(noise(2.9), 180) * 0.6 + np.sin(2 * np.pi * 120 * tvec(2.9)) * 0.05
+place(hum, 0.0, 0.25, 0, 0.2)
+place(pad([A2, E3, C4], 3.0, 0.6, 0.6), 0.0, 0.32, 0, 0.6)
+for tt in np.arange(0.1, 2.9, 0.5):
+    place(tick(), tt, 0.12, 0.3)
+    place(kick(0.3, 80, 40), tt, 0.25)
+place(impact(0.9, 50), 1.20, 0.45, 0, 0.3)
 place(stab([A3, C4, E4], 0.25), 1.20, 0.2, 0, 0.3)
-place(pluck(E5, 0.5), 1.6, 0.18, -0.3, 0.6)           # LAZY? tag
-place(pluck(B3 * 2, 0.6), 1.9, 0.22, 0.3, 0.6)        # question mark
+place(pluck(E5, 0.5), 1.6, 0.18, -0.3, 0.6)
+place(pluck(B3 * 2, 0.6), 1.9, 0.22, 0.3, 0.6)
 
-# ── 3–6.4 · the scale ──
-place(whoosh(0.8, 300, 6000), 2.9, 0.4, 0.4)
-place(clank(1.0), 3.45, 0.35, 0.2, 0.5)               # the beam tips
-place(blip(1300, 0.08, 40), 3.7, 0.12, -0.3, 0.5)     # CONSENSUS tag
+# ── 2.95–6.4 · whip pan, LAZY lands, the crowd ──
+place(whoosh(0.5, 500, 12000), 2.8, 0.6, 0.6)
+place(impact(0.8, 60), 3.45, 0.4, -0.3, 0.3)
+place(clank(1.0), 3.55, 0.38, -0.2, 0.5)
+place(blip(1300, 0.08, 40), 3.75, 0.12, -0.3, 0.5)
+murmur = sum(lowpass(noise(2.9), 600 + 150 * i) * (0.6 + 0.4 * np.sin(2 * np.pi * (3 + i) * tvec(2.9) + i)) for i in range(4))
+place(murmur * np.minimum(1, tvec(2.9) / 0.4) * np.minimum(1, (2.9 - tvec(2.9)) / 0.5), 3.3, 0.18, 0, 0.5)
 place(pad([F2, C3, A3], 3.4, 0.5, 0.6), 3.0, 0.3, 0, 0.6)
 for tt in np.arange(3.0, 6.4, 0.5):
     place(kick(0.3, 90, 42), tt, 0.3)
     place(hat(0.04), tt + 0.25, 0.06, 0.3)
 
-# ── 6.4–9.6 · BUT: the brain drops, LAZY dissolves, scan ──
+# ── 6.4–7.85 · BUT: the brain drops, LAZY dissolves ──
 place(riser(0.45, 300, 9000), 6.05, 0.4)
-place(impact(1.6, 38), 6.55, 0.8, 0, 0.5)            # brain lands
+place(impact(1.6, 38), 6.55, 0.8, 0, 0.5)
 place(clank(1.2), 6.62, 0.35, 0.3, 0.6)
 sand = lowpass(noise(1.0), 9000) - lowpass(noise(1.0), 2500)
 place(sand * np.sin(np.linspace(0, np.pi, len(sand))), 7.0, 0.35, -0.5, 0.4)
-place(whoosh(0.6, 400, 8000), 7.85, 0.35)
-servo = np.sin(2 * np.pi * np.cumsum(np.linspace(300, 700, int(0.6 * SR))) / SR) * 0.4
-place(servo, 8.3, 0.12, 0.2)
-for i, tt in enumerate((8.9, 9.15, 9.4)):            # readout lines; the last is the alert
-    place(blip(1400 if i < 2 else 880, 0.12, 25), tt, 0.14 if i < 2 else 0.25, 0.3, 0.4)
-place(blip(880, 0.12, 25), 9.52, 0.22, 0.3, 0.4)
-place(pad([A2, E3, A3, C4], 3.2, 0.3, 0.6), 6.55, 0.4, 0, 0.7)
-for tt in np.arange(6.55, 9.6, 0.5):
+for i, tt in enumerate(np.arange(7.7, 8.3, 0.075)):
+    place(blip(700 * 2 ** (i / 8), 0.06, 50), tt, 0.06, (i % 2 - 0.5) * 0.4)   # OPPOSITE flips letter by letter
+place(pad([A2, E3, A3, C4], 1.5, 0.3, 0.4), 6.55, 0.4, 0, 0.7)
+for tt in np.arange(6.55, 7.85, 0.5):
     place(kick(0.35, 120, 45), tt, 0.5)
     place(snare(0.25), tt + 0.25, 0.18, 0, 0.3)
 
-# ── 9.6–12.6 · the clock cracks, emotion ──
-place(whoosh(0.6, 400, 8000), 9.5, 0.35, -0.3)
-tt, gap = 9.7, 0.2
+# ── 7.85–12.35 · inside the brain ──
+place(riser(0.55, 200, 14000), 7.85, 0.55)
+place(impact(1.4, 34), 8.35, 0.7, 0, 0.7)                 # we're in
+under = lowpass(noise(4.0), 500) * 0.9 + np.sin(2 * np.pi * 55 * tvec(4.0)) * 0.3
+place(under * np.minimum(1, tvec(4.0) / 0.3) * np.minimum(1, (4.0 - tvec(4.0)) / 0.2), 8.35, 0.3, 0, 0.6)
+r2 = np.random.default_rng(5)
+for k in range(46):                                       # neurons firing
+    tt = 8.4 + r2.uniform(0, 3.9)
+    place(blip(float(r2.choice([1800, 2400, 3200, 4100])), 0.05, 70), tt, 0.05, r2.uniform(-0.9, 0.9), 0.6)
+for tt in np.arange(8.35, 11.25, 0.5):
+    place(kick(0.4, 110, 40), tt, 0.4)
+place(pluck(G4, 0.5), 9.7, 0.18, -0.4, 0.6)               # the TIME cluster lights up
+tt, gap = 9.75, 0.2
 while tt < 10.55:
-    place(tick(), tt, 0.16, 0.2)
-    tt += gap; gap = max(0.04, gap * 0.82)
+    place(tick(), tt, 0.14, -0.4); tt += gap; gap = max(0.04, gap * 0.82)
 glass = noise(0.6) - lowpass(noise(0.6), 4000)
-place(glass * np.exp(-tvec(0.6) * 8), 10.6, 0.6, 0, 0.4)
-place(impact(1.2, 44), 10.6, 0.6, 0, 0.4)
-place(whoosh(0.2, 1500, 12000), 10.7, 0.3, -0.4); place(whoosh(0.2, 1500, 12000), 10.85, 0.3, 0.4)
-place(whoosh(0.6, 400, 8000), 11.1, 0.3, 0.3)
-for i, f in enumerate([C4, E4, G4, C5]):
-    place(pluck(f, 0.9), 11.65 + i * 0.05, 0.22, (i - 1.5) * 0.3, 0.7)   # EMOTION
-for tt in np.arange(9.6, 12.6, 0.5):
-    place(kick(0.35, 120, 45), tt, 0.45)
+place(glass * np.exp(-tvec(0.6) * 8), 10.6, 0.55, -0.3, 0.4)
+place(impact(1.0, 44), 10.6, 0.5, 0, 0.4)
+place(whoosh(0.2, 1500, 12000), 10.7, 0.28, -0.4); place(whoosh(0.2, 1500, 12000), 10.85, 0.28, 0.4)
+hb = 0.6
+tt = 11.25
+while tt < 12.35:                                          # heartbeat speeds up as fear spreads
+    place(kick(0.25, 70, 38), tt, 0.7); place(kick(0.2, 70, 38), tt + 0.16, 0.45)
+    tt += hb; hb = max(0.3, hb * 0.82)
+place(stab([A2 * 2, C3 * 2, 155.6 * 2], 0.6), 11.65, 0.25, 0, 0.5)
+place(riser(0.9, 120, 6000), 11.45, 0.35)
+place(whoosh(0.45, 8000, 200), 12.3, 0.5)                 # sucked into the fear centre
 
-# ── 12.6–15.3 · back at the desk: the fear grows ──
-place(whoosh(0.8, 300, 6000), 12.5, 0.4, -0.4)
-place(growl(1.25), 13.4, 0.55, 0, 0.4)
+# ── 12.8–15.35 · back at the desk: the shadow becomes the fear ──
+place(whoosh(0.4, 200, 6000), 12.75, 0.4)
+buzz = np.sign(np.sin(2 * np.pi * 100 * tvec(1.8))) * 0.15 * (0.5 + 0.5 * np.sin(2 * np.pi * 9 * tvec(1.8)))
+place(lowpass(buzz, 2000), 12.8, 0.2, 0.4, 0.2)           # the lamp flickers
+place(growl(1.25), 13.4, 0.6, 0, 0.4)
 place(riser(1.2, 120, 3000), 13.4, 0.35)
-place(impact(2.0, 30), 14.62, 1.0, 0, 0.6)          # FEAR.
-place(growl(0.9) * np.exp(-tvec(0.9) * 2.5), 14.62, 0.7, 0, 0.5)
+place(impact(2.0, 30), 14.62, 1.0, 0, 0.6)
+place(growl(0.9) * np.exp(-tvec(0.9) * 2.5), 14.62, 0.75, 0, 0.5)
 place(stab([A2 * 2, C3 * 2, 155.6 * 2], 0.5), 14.62, 0.3, 0, 0.4)
 
-# ── 15.3–17.5 · start small ──
-place(pad([F3, A3, C4, E4], 2.3, 0.4, 1.2), 15.2, 0.45, 0, 0.8)
+# ── 15.35–18 · start small ──
+place(pad([F3, A3, C4, E4], 2.65, 0.4, 1.2), 15.2, 0.45, 0, 0.8)
 place(piano(C5, 1.8), 15.55, 0.3, -0.2, 0.8)
 place(piano(E5, 1.8), 15.95, 0.3, 0.2, 0.8)
-place(piano(G5, 1.5), 16.4, 0.22, 0, 0.8)
-place(whoosh(0.4, 1200, 9000), 16.15, 0.25, -0.3)    # the page slides
-place(pluck(C5 * 2, 0.6), 16.7, 0.15, 0, 0.8)        # ONE PAGE tag
+boop = np.sin(2 * np.pi * np.cumsum(np.geomspace(900, 300, int(0.25 * SR))) / SR) * np.exp(-tvec(0.25) * 6)
+place(boop, 16.4, 0.25, 0, 0.5)                             # SMALL shrinks
+place(whoosh(0.4, 1200, 9000), 16.15, 0.25, -0.3)
+place(piano(G5, 1.5), 16.6, 0.22, 0, 0.8)
+place(pluck(C5 * 2, 0.6), 16.75, 0.15, 0, 0.8)
+place(piano(C4, 1.6), 17.0, 0.2, 0, 0.8)
 
 # ── mix ──
 ir_t = tvec(1.6)
